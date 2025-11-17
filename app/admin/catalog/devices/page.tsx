@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { DeviceFormDialog } from "./device-form"
+import { DeviceFormDrawer } from "./device-form"
 
 type Device = {
   id: number
