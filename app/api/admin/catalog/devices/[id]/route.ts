@@ -3,10 +3,13 @@ import { forwardResponse } from "@/lib/api-proxy"
 
 type IdParams = { params: Promise<{ id: string }> }
 
+function isNumericId(id: string) {
+  return /^\d+$/.test(id)
+}
+
 export async function GET(_: Request, context: IdParams) {
   const { id } = await context.params
-  // публичный эндпоинт возвращает карточку аппарата по slug
-  const res = await serverApi(`/devices/${id}`)
+  const res = await serverApi(isNumericId(id) ? `/admin/catalog/devices/${id}` : `/devices/${id}`)
   return forwardResponse(res)
 }
 

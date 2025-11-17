@@ -27,9 +27,22 @@ type ServiceDetail = {
   ctaUrl?: string | null
   sortOrder?: number | null
   heroImageFileId?: number | null
+  heroImage?: { fileId?: number | null } | null
+  galleryImageFileIds?: number[] | null
   images?: Array<{ purpose: "HERO" | "GALLERY"; order: number; file?: { id: number } }>
-  devices?: Array<{ deviceId: number; device?: { id: number } }>
+  devices?: Array<{ deviceId?: number | null; device?: { id: number } }>
+  usedDevices?: Array<{ id?: number; deviceId?: number; device?: { id: number } } | number>
   servicePricesExtended?: Array<{
+    id: number
+    title: string
+    price: number
+    durationMinutes?: number | null
+    type?: string | null
+    sessionsCount?: number | null
+    order?: number | null
+    isActive?: boolean | null
+  }>
+  pricesExtended?: Array<{
     id: number
     title: string
     price: number
@@ -104,19 +117,28 @@ export function ServiceFormDialog({
 
   useEffect(() => {
     if (!open) return
-    if (!serviceSlug) return
+    const identifier = serviceId ? String(serviceId) : serviceSlug
+    if (!identifier) return
     setLoading(true)
-    fetch(`/api/admin/catalog/services/${serviceSlug}`)
+    fetch(`/api/admin/catalog/services/${identifier}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(await res.text())
         return res.json()
       })
       .then((data: ServiceDetail) => {
         const heroFromImages = data.images?.find((img) => img.purpose === "HERO")?.file?.id ?? null
-        const galleryIds = data.images?.filter((img) => img.purpose === "GALLERY").map((img) => img.file?.id).filter(Boolean) as number[] || []
+        const heroFromInline = data.heroImage?.fileId ?? null
+        const galleryFromImages = (data.images
+          ?.filter((img) => img.purpose === "GALLERY")
+          .map((img) => img.file?.id)
+          .filter(Boolean) as number[] | undefined) || []
+        const galleryFromField = data.galleryImageFileIds
+        const galleryIds = (galleryFromField ?? galleryFromImages).filter(Boolean)
+        const priceSource = data.servicePricesExtended ?? data.pricesExtended ?? []
+        const devicesSource = data.usedDevices ?? data.devices ?? []
         setForm({
           categoryId: data.categoryId,
-          name: data.name,
+          name: data.name ?? "",
           shortOffer: data.shortOffer ?? "",
           priceFrom: data.priceFrom?.toString() ?? "",
           durationMinutes: data.durationMinutes?.toString() ?? "",
@@ -126,15 +148,21 @@ export function ServiceFormDialog({
           ctaUrl: data.ctaUrl ?? "",
           sortOrder: data.sortOrder?.toString() ?? "",
         })
-        setHeroId(data.heroImageFileId ?? heroFromImages)
-        setGallery(galleryIds.join(", "))
+        setHeroId(data.heroImageFileId ?? heroFromInline ?? heroFromImages ?? null)
+        setGallery((galleryIds ?? []).join(", "))
         setSelectedDevices(
-          (data.devices || [])
-            .map((d) => d.deviceId ?? d.device?.id)
-            .filter((id): id is number => Boolean(id))
+          devicesSource
+            .map((d) => {
+              if (typeof d === "number") return d
+              if (d?.deviceId) return d.deviceId
+              if (d?.device?.id) return d.device.id
+              if (d?.id && typeof d.id === "number") return d.id
+              return null
+            })
+            .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
         )
         setPrices(
-          (data.servicePricesExtended || []).map((row) => ({
+          priceSource.map((row) => ({
             title: row.title || "",
             price: row.price?.toString() || "",
             durationMinutes: row.durationMinutes?.toString() || "",
@@ -148,7 +176,7 @@ export function ServiceFormDialog({
       })
       .catch((e: any) => setError(e.message || "Не удалось загрузить услугу"))
       .finally(() => setLoading(false))
-  }, [open, serviceSlug])
+  }, [open, serviceId, serviceSlug])
 
   function resetState() {
     setForm({

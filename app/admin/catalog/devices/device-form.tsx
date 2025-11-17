@@ -16,6 +16,7 @@ type DeviceDetail = {
   principle: string
   safetyNotes?: string | null
   heroImageFileId?: number | null
+  heroImage?: { fileId?: number | null } | null
   images?: Array<{ purpose: "HERO" | "GALLERY"; file?: { id: number } }>
   galleryImageFileIds?: number[]
   seo?: SeoState
@@ -47,30 +48,38 @@ export function DeviceFormDialog({ deviceId, deviceSlug, triggerLabel, onComplet
   const [seo, setSeo] = useState<SeoState>(defaultSeoState)
 
   useEffect(() => {
-    if (!open || !deviceSlug) return
+    if (!open) return
+    const identifier = deviceId ? String(deviceId) : deviceSlug
+    if (!identifier) return
     setLoading(true)
-    fetch(`/api/admin/catalog/devices/${deviceSlug}`)
+    fetch(`/api/admin/catalog/devices/${identifier}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(await res.text())
         return res.json()
       })
       .then((data: DeviceDetailResponse) => {
         const heroFromImages = data.images?.find((img) => img.purpose === "HERO")?.file?.id ?? null
-        const galleryIds = data.images?.filter((img) => img.purpose === "GALLERY").map((img) => img.file?.id).filter(Boolean) as number[] || []
+        const heroInline = data.heroImage?.fileId ?? null
+        const galleryFromImages = (data.images
+          ?.filter((img) => img.purpose === "GALLERY")
+          .map((img) => img.file?.id)
+          .filter(Boolean) as number[] | undefined) || []
+        const galleryFromField = data.galleryImageFileIds
+        const galleryIds = (galleryFromField ?? galleryFromImages).filter(Boolean)
         setForm({
-          brand: data.brand,
-          model: data.model,
-          positioning: data.positioning,
-          principle: data.principle,
+          brand: data.brand ?? "",
+          model: data.model ?? "",
+          positioning: data.positioning ?? "",
+          principle: data.principle ?? "",
           safetyNotes: data.safetyNotes ?? "",
         })
-        setHeroId(data.heroImageFileId ?? heroFromImages)
-        setGallery(galleryIds.join(", "))
+        setHeroId(data.heroImageFileId ?? heroInline ?? heroFromImages ?? null)
+        setGallery((galleryIds ?? []).join(", "))
         setSeo(data.seo ?? defaultSeoState)
       })
       .catch((e: any) => setError(e.message || "Не удалось загрузить данные"))
       .finally(() => setLoading(false))
-  }, [open, deviceSlug])
+  }, [open, deviceId, deviceSlug])
 
   function resetState() {
     setForm({ brand: "", model: "", positioning: "", principle: "", safetyNotes: "" })

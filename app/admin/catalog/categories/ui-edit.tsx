@@ -21,18 +21,15 @@ interface CategoryDetail {
 
 export function EditCategoryDialog({
   categoryId,
-  categorySlug,
   triggerLabel,
 }: {
   categoryId: number
-  categorySlug: string
   triggerLabel?: string
 }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [detail, setDetail] = useState<CategoryDetail | null>(null)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [sortOrder, setSortOrder] = useState("")
@@ -41,16 +38,14 @@ export function EditCategoryDialog({
 
   useEffect(() => {
     if (!open) return
-    if (detail) return
     setLoading(true)
-    fetch(`/api/admin/catalog/categories/by-slug/${categorySlug}`)
+    fetch(`/api/admin/catalog/categories/${categoryId}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(await res.text())
         return res.json()
       })
       .then((json: CategoryDetail) => {
         const heroFromImages = json.images?.find((img) => img.purpose === "HERO")?.file?.id
-        setDetail(json)
         setName(json.name)
         setDescription(json.description ?? "")
         setSortOrder(json.sortOrder?.toString() ?? "")
@@ -59,7 +54,7 @@ export function EditCategoryDialog({
       })
       .catch((e: any) => setError(e.message || "Не удалось загрузить"))
       .finally(() => setLoading(false))
-  }, [open, detail, categorySlug])
+  }, [open, categoryId])
 
   async function submit() {
     setSaving(true)
@@ -86,7 +81,6 @@ export function EditCategoryDialog({
   }
 
   function resetState() {
-    setDetail(null)
     setName("")
     setDescription("")
     setSortOrder("")
