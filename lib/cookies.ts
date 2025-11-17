@@ -1,14 +1,12 @@
 "use server"
 
 import { cookies } from "next/headers"
+import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/cookie-keys"
 
-export const ACCESS_COOKIE = "accessToken"
-export const REFRESH_COOKIE = "refreshToken"
-
-export function getAccessToken() {
+export async function getAccessToken() {
   return cookies().get(ACCESS_COOKIE)?.value ?? null
 }
 
-export function getRefreshToken() {
+export async function getRefreshToken() {
   return cookies().get(REFRESH_COOKIE)?.value ?? null
 }
