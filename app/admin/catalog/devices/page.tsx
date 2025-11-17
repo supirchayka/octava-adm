@@ -69,7 +69,6 @@ export default function DevicesPage() {
                   <td className="p-2">
                     <DeviceFormDialog
                       deviceId={device.id}
-                      deviceSlug={device.slug}
                       triggerLabel="Редактировать"
                       onCompleted={loadDevices}
                     />

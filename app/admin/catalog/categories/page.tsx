@@ -1,12 +1,13 @@
-import { backendURL } from "@/lib/utils"
 import Link from "next/link"
+import { serverApi } from "@/lib/server-fetch"
 import CreateCategoryForm from "./ui-create"
 import { EditCategoryDialog } from "./ui-edit"
 
 async function fetchCategories() {
-  const res = await fetch(`${backendURL()}/service-categories`, { cache: "no-store" })
+  const res = await serverApi(`/admin/catalog/categories`)
   if (!res.ok) throw new Error("Не удалось получить категории")
-  return res.json() as Promise<Array<{ id:number; slug:string; name:string; description:string | null; servicesCount:number }>> 
+  const data = await res.json()
+  return (Array.isArray(data) ? data : data.items || []) as Array<{ id:number; slug:string; name:string; description:string | null; servicesCount:number }>
 }
 
 export default async function CategoriesPage() {
@@ -26,7 +27,7 @@ export default async function CategoriesPage() {
             </div>
             <div className="flex items-center gap-4">
               <div className="text-sm text-gray-500">услуг: {c.servicesCount}</div>
-              <Link className="text-sm underline" href={`/admin/catalog/services?category=${c.slug}`}>Открыть услуги</Link>
+              <Link className="text-sm underline" href={`/admin/catalog/services?categoryId=${c.id}`}>Открыть услуги</Link>
               <EditCategoryDialog categoryId={c.id} />
             </div>
           </div>

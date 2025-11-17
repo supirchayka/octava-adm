@@ -1,24 +1,39 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { backendURL } from "@/lib/utils"
+import { useSearchParams } from "next/navigation"
 import { ServiceFormDialog, type CategoryOption, type DeviceOption } from "./service-form"
 
 type Category = { id: number; slug: string; name: string; description: string | null }
 type Service = {
-  id: number; slug: string; name: string; shortOffer: string | null; priceFrom: number | null; durationMinutes: number | null
+  id: number
+  slug: string
+  categoryId?: number
+  name: string
+  shortOffer: string | null
+  priceFrom: number | null
+  durationMinutes: number | null
 }
 
 export default function ServicesPage() {
+  const searchParams = useSearchParams()
   const [cats, setCats] = useState<Category[]>([])
-  const [slug, setSlug] = useState<string>("")
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
   const [services, setServices] = useState<Service[]>([])
   const [devices, setDevices] = useState<DeviceOption[]>([])
+  const [servicesError, setServicesError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch(`${backendURL()}/service-categories`, { cache: "no-store" as any })
-      .then(r => r.json())
-      .then((j: any[]) => setCats(j.map(x => ({ id: x.id, slug: x.slug, name: x.name, description: x.description }))))
+    fetch(`/api/admin/catalog/categories`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(await res.text())
+        return res.json()
+      })
+      .then((j: any) => {
+        const list = Array.isArray(j) ? j : j.items || []
+        setCats(list)
+      })
+      .catch(() => setCats([]))
   }, [])
 
   useEffect(() => {
@@ -34,13 +49,35 @@ export default function ServicesPage() {
       .catch(() => setDevices([]))
   }, [])
 
-  async function loadServices(s: string) {
-    setSlug(s)
-    const res = await fetch(`${backendURL()}/service-categories/${s}`, { cache: "no-store" as any })
-    if (!res.ok) { setServices([]); return }
-    const j = await res.json()
-    setServices(j.services || [])
+  async function loadServices(categoryId: number | null) {
+    if (!categoryId) {
+      setSelectedCategoryId(null)
+      setServices([])
+      return
+    }
+    setSelectedCategoryId(categoryId)
+    setServicesError(null)
+    try {
+      const res = await fetch(`/api/admin/catalog/services?categoryId=${categoryId}`)
+      if (!res.ok) throw new Error(await res.text())
+      const j = await res.json()
+      const list = Array.isArray(j) ? j : j.items || j.services || []
+      setServices(list)
+    } catch (e: any) {
+      setServices([])
+      setServicesError(e.message || "Не удалось загрузить услуги")
+    }
   }
+
+  useEffect(() => {
+    const param = searchParams.get("categoryId")
+    if (param) {
+      const numeric = Number(param)
+      if (!Number.isNaN(numeric) && selectedCategoryId !== numeric) {
+        loadServices(numeric)
+      }
+    }
+  }, [searchParams, selectedCategoryId])
 
   return (
     <div className="space-y-4">
@@ -48,23 +85,32 @@ export default function ServicesPage() {
       <div className="flex gap-2 items-end">
         <div className="grid">
           <label className="text-sm">Категория</label>
-          <select className="border rounded-md h-10 px-3 min-w-[280px]" value={slug} onChange={e=>loadServices(e.target.value)}>
+          <select
+            className="border rounded-md h-10 px-3 min-w-[280px]"
+            value={selectedCategoryId ?? ""}
+            onChange={(e) => loadServices(e.target.value ? Number(e.target.value) : null)}
+          >
             <option value="">— выберите —</option>
-            {cats.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
+            {cats.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
           </select>
         </div>
         <ServiceFormDialog
-          categoryId={cats.find((c) => c.slug === slug)?.id || 0}
+          categoryId={selectedCategoryId || 0}
           categories={cats as CategoryOption[]}
           devices={devices}
           triggerLabel="+ Добавить услугу"
-          disabled={!slug}
-          onCompleted={() => loadServices(slug)}
+          disabled={!selectedCategoryId}
+          onCompleted={() => loadServices(selectedCategoryId)}
         />
       </div>
 
-      {!slug && <p className="text-sm text-gray-500">Выберите категорию, чтобы увидеть список услуг.</p>}
-      {slug && (
+      {!selectedCategoryId && <p className="text-sm text-gray-500">Выберите категорию, чтобы увидеть список услуг.</p>}
+      {selectedCategoryId && servicesError && <div className="text-sm text-red-600">{servicesError}</div>}
+      {selectedCategoryId && !servicesError && (
         <div className="rounded-xl border overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-secondary/50">
@@ -77,7 +123,7 @@ export default function ServicesPage() {
               </tr>
             </thead>
             <tbody>
-              {services.map(s => (
+              {services.map((s) => (
                 <tr key={s.id} className="border-t">
                   <td className="p-2">{s.name}</td>
                   <td className="p-2">{s.shortOffer || "—"}</td>
@@ -86,12 +132,11 @@ export default function ServicesPage() {
                   <td className="p-2">
                     <ServiceFormDialog
                       serviceId={s.id}
-                      serviceSlug={s.slug}
-                      categoryId={cats.find((c) => c.slug === slug)?.id || 0}
+                      categoryId={selectedCategoryId || s.categoryId || 0}
                       categories={cats as CategoryOption[]}
                       devices={devices}
                       triggerLabel="Редактировать"
-                      onCompleted={() => loadServices(slug)}
+                      onCompleted={() => loadServices(selectedCategoryId)}
                     />
                   </td>
                 </tr>

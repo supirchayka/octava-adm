@@ -71,7 +71,6 @@ interface Props {
   devices: DeviceOption[]
   triggerLabel: string
   serviceId?: number
-  serviceSlug?: string
   onCompleted: () => void
   disabled?: boolean
 }
@@ -82,7 +81,6 @@ export function ServiceFormDialog({
   devices,
   triggerLabel,
   serviceId,
-  serviceSlug,
   onCompleted,
   disabled,
 }: Props) {
@@ -117,10 +115,9 @@ export function ServiceFormDialog({
 
   useEffect(() => {
     if (!open) return
-    const identifier = serviceId ? String(serviceId) : serviceSlug
-    if (!identifier) return
+    if (!serviceId) return
     setLoading(true)
-    fetch(`/api/admin/catalog/services/${identifier}`)
+    fetch(`/api/admin/catalog/services/${serviceId}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(await res.text())
         return res.json()
@@ -176,7 +173,7 @@ export function ServiceFormDialog({
       })
       .catch((e: any) => setError(e.message || "Не удалось загрузить услугу"))
       .finally(() => setLoading(false))
-  }, [open, serviceId, serviceSlug])
+  }, [open, serviceId])
 
   function resetState() {
     setForm({

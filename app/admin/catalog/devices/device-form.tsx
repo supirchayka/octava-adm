@@ -26,12 +26,11 @@ type DeviceDetailResponse = DeviceDetail & { slug?: string }
 
 interface Props {
   deviceId?: number
-  deviceSlug?: string
   triggerLabel: string
   onCompleted: () => void
 }
 
-export function DeviceFormDialog({ deviceId, deviceSlug, triggerLabel, onCompleted }: Props) {
+export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -49,10 +48,9 @@ export function DeviceFormDialog({ deviceId, deviceSlug, triggerLabel, onComplet
 
   useEffect(() => {
     if (!open) return
-    const identifier = deviceId ? String(deviceId) : deviceSlug
-    if (!identifier) return
+    if (!deviceId) return
     setLoading(true)
-    fetch(`/api/admin/catalog/devices/${identifier}`)
+    fetch(`/api/admin/catalog/devices/${deviceId}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(await res.text())
         return res.json()
@@ -79,7 +77,7 @@ export function DeviceFormDialog({ deviceId, deviceSlug, triggerLabel, onComplet
       })
       .catch((e: any) => setError(e.message || "Не удалось загрузить данные"))
       .finally(() => setLoading(false))
-  }, [open, deviceId, deviceSlug])
+  }, [open, deviceId])
 
   function resetState() {
     setForm({ brand: "", model: "", positioning: "", principle: "", safetyNotes: "" })

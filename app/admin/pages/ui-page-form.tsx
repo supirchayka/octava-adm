@@ -21,14 +21,20 @@ interface Props {
 }
 
 export function PageForm({ page, title, description, fields, initialData }: Props) {
+  const initialContent = initialData && typeof initialData === "object" && "data" in initialData && typeof (initialData as any).data === "object"
+    ? (initialData as any).data
+    : initialData
+  const content = (initialContent ?? null) as Record<string, any> | null
+  const initialSeo = ((initialData as any)?.seo ?? defaultSeoState) as SeoState
+
   const [form, setForm] = useState(() => {
     const values: Record<string, string> = {}
     fields.forEach((field) => {
-      values[field.key] = initialData?.[field.key] ?? ""
+      values[field.key] = content?.[field.key] ?? ""
     })
     return values
   })
-  const [seo, setSeo] = useState<SeoState>(() => initialData?.seo ?? defaultSeoState)
+  const [seo, setSeo] = useState<SeoState>(() => initialSeo)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)

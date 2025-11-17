@@ -1,4 +1,4 @@
-import { backendURL } from "@/lib/utils"
+import { serverApi } from "@/lib/server-fetch"
 import { PageForm, type PageField } from "../ui-page-form"
 
 const fields: PageField[] = [
@@ -11,7 +11,7 @@ const fields: PageField[] = [
 
 async function fetchPage() {
   try {
-    const res = await fetch(`${backendURL()}/pages/about`, { cache: "no-store" })
+    const res = await serverApi(`/admin/pages/about`)
     if (!res.ok) return null
     return res.json()
   } catch {
