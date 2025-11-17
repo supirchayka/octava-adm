@@ -58,11 +58,21 @@ interface Props {
   devices: DeviceOption[]
   triggerLabel: string
   serviceId?: number
+  serviceSlug?: string
   onCompleted: () => void
   disabled?: boolean
 }
 
-export function ServiceFormDrawer({ categoryId, categories, devices, triggerLabel, serviceId, onCompleted, disabled }: Props) {
+export function ServiceFormDrawer({
+  categoryId,
+  categories,
+  devices,
+  triggerLabel,
+  serviceId,
+  serviceSlug,
+  onCompleted,
+  disabled,
+}: Props) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -94,9 +104,9 @@ export function ServiceFormDrawer({ categoryId, categories, devices, triggerLabe
 
   useEffect(() => {
     if (!open) return
-    if (!serviceId) return
+    if (!serviceSlug) return
     setLoading(true)
-    fetch(`/api/admin/catalog/services/${serviceId}`)
+    fetch(`/api/admin/catalog/services/${serviceSlug}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(await res.text())
         return res.json()
@@ -138,7 +148,7 @@ export function ServiceFormDrawer({ categoryId, categories, devices, triggerLabe
       })
       .catch((e: any) => setError(e.message || "Не удалось загрузить услугу"))
       .finally(() => setLoading(false))
-  }, [open, serviceId])
+  }, [open, serviceSlug])
 
   function resetState() {
     setForm({

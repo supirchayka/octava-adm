@@ -86,6 +86,7 @@ export default function ServicesPage() {
                   <td className="p-2">
                     <ServiceFormDrawer
                       serviceId={s.id}
+                      serviceSlug={s.slug}
                       categoryId={cats.find((c) => c.slug === slug)?.id || 0}
                       categories={cats as CategoryOption[]}
                       devices={devices}
