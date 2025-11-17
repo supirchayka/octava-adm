@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { backendURL } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { ServiceFormDrawer, type CategoryOption, type DeviceOption } from "./service-form"
 
 type Category = { id: number; slug: string; name: string; description: string | null }
 type Service = {
@@ -13,11 +13,25 @@ export default function ServicesPage() {
   const [cats, setCats] = useState<Category[]>([])
   const [slug, setSlug] = useState<string>("")
   const [services, setServices] = useState<Service[]>([])
+  const [devices, setDevices] = useState<DeviceOption[]>([])
 
   useEffect(() => {
     fetch(`${backendURL()}/service-categories`, { cache: "no-store" as any })
       .then(r => r.json())
       .then((j: any[]) => setCats(j.map(x => ({ id: x.id, slug: x.slug, name: x.name, description: x.description }))))
+  }, [])
+
+  useEffect(() => {
+    fetch(`/api/admin/catalog/devices`)
+      .then(async res => {
+        if (!res.ok) throw new Error(await res.text())
+        return res.json()
+      })
+      .then((j: any) => {
+        const list = Array.isArray(j) ? j : j.items || []
+        setDevices(list.map((d: any) => ({ id: d.id, label: `${d.brand} ${d.model}`.trim() })))
+      })
+      .catch(() => setDevices([]))
   }, [])
 
   async function loadServices(s: string) {
@@ -39,7 +53,14 @@ export default function ServicesPage() {
             {cats.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
           </select>
         </div>
-        <Button disabled={!slug}>+ Добавить услугу</Button>
+        <ServiceFormDrawer
+          categoryId={cats.find((c) => c.slug === slug)?.id || 0}
+          categories={cats as CategoryOption[]}
+          devices={devices}
+          triggerLabel="+ Добавить услугу"
+          disabled={!slug}
+          onCompleted={() => loadServices(slug)}
+        />
       </div>
 
       {!slug && <p className="text-sm text-gray-500">Выберите категорию, чтобы увидеть список услуг.</p>}
@@ -63,7 +84,15 @@ export default function ServicesPage() {
                   <td className="p-2">{s.priceFrom ?? "—"}</td>
                   <td className="p-2">{s.durationMinutes ?? "—"}</td>
                   <td className="p-2">
-                    <Button variant="outline">Редактировать</Button>
+                    <ServiceFormDrawer
+                      serviceId={s.id}
+                      serviceSlug={s.slug}
+                      categoryId={cats.find((c) => c.slug === slug)?.id || 0}
+                      categories={cats as CategoryOption[]}
+                      devices={devices}
+                      triggerLabel="Редактировать"
+                      onCompleted={() => loadServices(slug)}
+                    />
                   </td>
                 </tr>
               ))}
