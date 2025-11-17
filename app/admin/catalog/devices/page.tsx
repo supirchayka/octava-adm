@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { DeviceFormDialog } from "./device-form"
 import { DeviceFormDrawer } from "./device-form"
 
 type Device = {
@@ -42,7 +43,7 @@ export default function DevicesPage() {
           <h1 className="text-2xl font-semibold">Аппараты</h1>
           <p className="text-sm text-muted-foreground">CRUD для /admin/catalog/devices</p>
         </div>
-        <DeviceFormDrawer triggerLabel="+ Добавить аппарат" onCompleted={loadDevices} />
+        <DeviceFormDialog triggerLabel="+ Добавить аппарат" onCompleted={loadDevices} />
       </div>
       {loading && <div className="text-sm text-muted-foreground">Загрузка...</div>}
       {error && <div className="text-sm text-red-600">{error}</div>}
@@ -67,7 +68,7 @@ export default function DevicesPage() {
                   <td className="p-2">{device.slug}</td>
                   <td className="p-2 text-muted-foreground">{device.updatedAt ? new Date(device.updatedAt).toLocaleString() : "—"}</td>
                   <td className="p-2">
-                    <DeviceFormDrawer deviceId={device.id} triggerLabel="Редактировать" onCompleted={loadDevices} />
+                    <DeviceFormDialog deviceId={device.id} triggerLabel="Редактировать" onCompleted={loadDevices} />
                   </td>
                 </tr>
               ))}

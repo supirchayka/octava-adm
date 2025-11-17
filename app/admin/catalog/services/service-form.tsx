@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -63,7 +63,7 @@ interface Props {
   disabled?: boolean
 }
 
-export function ServiceFormDrawer({
+export function ServiceFormDialog({
   categoryId,
   categories,
   devices,
@@ -254,20 +254,20 @@ export function ServiceFormDrawer({
   const title = serviceId ? "Редактировать услугу" : "Новая услуга"
 
   return (
-    <Sheet open={open} onOpenChange={(next) => {
+    <Dialog open={open} onOpenChange={(next) => {
       setOpen(next)
       if (!next) resetState()
     }}>
-      <SheetTrigger asChild>
+      <DialogTrigger asChild>
         <Button variant={serviceId ? "outline" : "default"} disabled={disabled}>
           {triggerLabel}
         </Button>
-      </SheetTrigger>
-      <SheetContent className="sm:max-w-3xl overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-          <SheetDescription>Поля соответствуют /admin/catalog/services (см. ТЗ)</SheetDescription>
-        </SheetHeader>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>Поля соответствуют /admin/catalog/services (см. ТЗ)</DialogDescription>
+        </DialogHeader>
         {loading && <div className="text-sm text-muted-foreground">Загрузка...</div>}
         {!loading && (
           <form className="space-y-4 py-4" onSubmit={submit}>
@@ -415,7 +415,7 @@ export function ServiceFormDrawer({
             </div>
           </form>
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }

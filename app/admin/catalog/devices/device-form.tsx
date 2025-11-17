@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -27,7 +27,7 @@ interface Props {
   onCompleted: () => void
 }
 
-export function DeviceFormDrawer({ deviceId, triggerLabel, onCompleted }: Props) {
+export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -123,18 +123,18 @@ export function DeviceFormDrawer({ deviceId, triggerLabel, onCompleted }: Props)
   const title = deviceId ? `Редактировать аппарат #${deviceId}` : "Новый аппарат"
 
   return (
-    <Sheet open={open} onOpenChange={(next) => {
+    <Dialog open={open} onOpenChange={(next) => {
       setOpen(next)
       if (!next) resetState()
     }}>
-      <SheetTrigger asChild>
+      <DialogTrigger asChild>
         <Button variant={deviceId ? "outline" : "default"}>{triggerLabel}</Button>
-      </SheetTrigger>
-      <SheetContent className="sm:max-w-2xl overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-          <SheetDescription>Поля POST/PUT /admin/catalog/devices</SheetDescription>
-        </SheetHeader>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>Поля POST/PUT /admin/catalog/devices</DialogDescription>
+        </DialogHeader>
         {loading && <div className="text-sm text-muted-foreground">Загрузка...</div>}
         {!loading && (
           <form className="space-y-4 py-4" onSubmit={submit}>
@@ -166,7 +166,7 @@ export function DeviceFormDrawer({ deviceId, triggerLabel, onCompleted }: Props)
             </div>
           </form>
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }

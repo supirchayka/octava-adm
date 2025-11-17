@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { backendURL } from "@/lib/utils"
-import { ServiceFormDrawer, type CategoryOption, type DeviceOption } from "./service-form"
+import { ServiceFormDialog, type CategoryOption, type DeviceOption } from "./service-form"
 
 type Category = { id: number; slug: string; name: string; description: string | null }
 type Service = {
@@ -53,7 +53,7 @@ export default function ServicesPage() {
             {cats.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
           </select>
         </div>
-        <ServiceFormDrawer
+        <ServiceFormDialog
           categoryId={cats.find((c) => c.slug === slug)?.id || 0}
           categories={cats as CategoryOption[]}
           devices={devices}
@@ -84,7 +84,7 @@ export default function ServicesPage() {
                   <td className="p-2">{s.priceFrom ?? "—"}</td>
                   <td className="p-2">{s.durationMinutes ?? "—"}</td>
                   <td className="p-2">
-                    <ServiceFormDrawer
+                    <ServiceFormDialog
                       serviceId={s.id}
                       serviceSlug={s.slug}
                       categoryId={cats.find((c) => c.slug === slug)?.id || 0}
