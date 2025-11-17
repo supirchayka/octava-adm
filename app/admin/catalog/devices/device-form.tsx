@@ -21,13 +21,16 @@ type DeviceDetail = {
   seo?: SeoState
 }
 
+type DeviceDetailResponse = DeviceDetail & { slug?: string }
+
 interface Props {
   deviceId?: number
+  deviceSlug?: string
   triggerLabel: string
   onCompleted: () => void
 }
 
-export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props) {
+export function DeviceFormDialog({ deviceId, deviceSlug, triggerLabel, onCompleted }: Props) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -44,14 +47,14 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
   const [seo, setSeo] = useState<SeoState>(defaultSeoState)
 
   useEffect(() => {
-    if (!open || !deviceId) return
+    if (!open || !deviceSlug) return
     setLoading(true)
-    fetch(`/api/admin/catalog/devices/${deviceId}`)
+    fetch(`/api/admin/catalog/devices/${deviceSlug}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(await res.text())
         return res.json()
       })
-      .then((data: DeviceDetail) => {
+      .then((data: DeviceDetailResponse) => {
         const heroFromImages = data.images?.find((img) => img.purpose === "HERO")?.file?.id ?? null
         const galleryIds = data.images?.filter((img) => img.purpose === "GALLERY").map((img) => img.file?.id).filter(Boolean) as number[] || []
         setForm({
@@ -67,7 +70,7 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
       })
       .catch((e: any) => setError(e.message || "Не удалось загрузить данные"))
       .finally(() => setLoading(false))
-  }, [open, deviceId])
+  }, [open, deviceSlug])
 
   function resetState() {
     setForm({ brand: "", model: "", positioning: "", principle: "", safetyNotes: "" })

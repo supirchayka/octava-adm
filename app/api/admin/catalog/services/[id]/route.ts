@@ -2,7 +2,9 @@ import { serverApi } from "@/lib/server-fetch"
 import { forwardResponse } from "@/lib/api-proxy"
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
-  const res = await serverApi(`/admin/catalog/services/${params.id}`)
+  // публичный эндпоинт возвращает услугу по slug, что позволяет открывать форму
+  // редактирования, имея только slug из списка категории
+  const res = await serverApi(`/services/${params.id}`)
   return forwardResponse(res)
 }
 

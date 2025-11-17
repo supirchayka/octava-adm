@@ -2,7 +2,8 @@ import { serverApi } from "@/lib/server-fetch"
 import { forwardResponse } from "@/lib/api-proxy"
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
-  const res = await serverApi(`/admin/catalog/devices/${params.id}`)
+  // публичный эндпоинт возвращает карточку аппарата по slug
+  const res = await serverApi(`/devices/${params.id}`)
   return forwardResponse(res)
 }
 

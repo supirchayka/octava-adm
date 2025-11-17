@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { DeviceFormDialog } from "./device-form"
-import { DeviceFormDrawer } from "./device-form"
 
 type Device = {
   id: number
@@ -68,7 +67,12 @@ export default function DevicesPage() {
                   <td className="p-2">{device.slug}</td>
                   <td className="p-2 text-muted-foreground">{device.updatedAt ? new Date(device.updatedAt).toLocaleString() : "—"}</td>
                   <td className="p-2">
-                    <DeviceFormDialog deviceId={device.id} triggerLabel="Редактировать" onCompleted={loadDevices} />
+                    <DeviceFormDialog
+                      deviceId={device.id}
+                      deviceSlug={device.slug}
+                      triggerLabel="Редактировать"
+                      onCompleted={loadDevices}
+                    />
                   </td>
                 </tr>
               ))}
