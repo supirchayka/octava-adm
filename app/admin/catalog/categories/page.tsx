@@ -1,7 +1,7 @@
 import { backendURL } from "@/lib/utils"
 import Link from "next/link"
 import CreateCategoryForm from "./ui-create"
-import Image from "next/image"
+import { EditCategoryDialog } from "./ui-edit"
 
 async function fetchCategories() {
   const res = await fetch(`${backendURL()}/service-categories`, { cache: "no-store" })
@@ -27,6 +27,7 @@ export default async function CategoriesPage() {
             <div className="flex items-center gap-4">
               <div className="text-sm text-gray-500">услуг: {c.servicesCount}</div>
               <Link className="text-sm underline" href={`/admin/catalog/services?category=${c.slug}`}>Открыть услуги</Link>
+              <EditCategoryDialog categoryId={c.id} categorySlug={c.slug} />
             </div>
           </div>
         ))}
