@@ -19,7 +19,15 @@ interface CategoryDetail {
   seo?: SeoState
 }
 
-export function EditCategoryDialog({ categoryId, triggerLabel }: { categoryId: number; triggerLabel?: string }) {
+export function EditCategoryDialog({
+  categoryId,
+  categorySlug,
+  triggerLabel,
+}: {
+  categoryId: number
+  categorySlug: string
+  triggerLabel?: string
+}) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -35,7 +43,7 @@ export function EditCategoryDialog({ categoryId, triggerLabel }: { categoryId: n
     if (!open) return
     if (detail) return
     setLoading(true)
-    fetch(`/api/admin/catalog/categories/${categoryId}`)
+    fetch(`/api/admin/catalog/categories/by-slug/${categorySlug}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(await res.text())
         return res.json()
@@ -51,7 +59,7 @@ export function EditCategoryDialog({ categoryId, triggerLabel }: { categoryId: n
       })
       .catch((e: any) => setError(e.message || "Не удалось загрузить"))
       .finally(() => setLoading(false))
-  }, [open, detail, categoryId])
+  }, [open, detail, categorySlug])
 
   async function submit() {
     setSaving(true)

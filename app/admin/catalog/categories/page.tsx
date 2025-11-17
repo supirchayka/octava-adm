@@ -27,7 +27,7 @@ export default async function CategoriesPage() {
             <div className="flex items-center gap-4">
               <div className="text-sm text-gray-500">услуг: {c.servicesCount}</div>
               <Link className="text-sm underline" href={`/admin/catalog/services?category=${c.slug}`}>Открыть услуги</Link>
-              <EditCategoryDialog categoryId={c.id} />
+              <EditCategoryDialog categoryId={c.id} categorySlug={c.slug} />
             </div>
           </div>
         ))}
