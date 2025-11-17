@@ -1,6 +1,6 @@
 import { cookies } from "next/headers"
 import { backendURL } from "@/lib/utils"
-import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/cookies"
+import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/cookie-keys"
 
 async function refreshTokens(oldRefresh: string | undefined) {
   if (!oldRefresh) return false
