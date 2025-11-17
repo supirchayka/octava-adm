@@ -1,6 +1,6 @@
 import { cookies } from "next/headers"
 import { backendURL } from "@/lib/utils"
-import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/cookies"
+import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/cookie-keys"
 
 async function refreshTokens(oldRefresh: string | undefined) {
   if (!oldRefresh) return false
@@ -12,7 +12,7 @@ async function refreshTokens(oldRefresh: string | undefined) {
   })
   if (!res.ok) return false
   const data = await res.json()
-  const c = cookies()
+  const c = await cookies()
   const accessExp = 60 * 15 // 15 минут
   const refreshExp = 60 * 60 * 24 * 30 // 30 дней
   c.set(ACCESS_COOKIE, data.accessToken, { httpOnly: true, sameSite: "lax", secure: true, path: "/", maxAge: accessExp })
@@ -21,7 +21,7 @@ async function refreshTokens(oldRefresh: string | undefined) {
 }
 
 export async function serverApi(path: string, init: RequestInit = {}, retry = true) {
-  const c = cookies()
+  const c = await cookies()
   const access = c.get(ACCESS_COOKIE)?.value
   const url = path.startsWith("http") ? path : `${backendURL()}${path}`
   const res = await fetch(url, {
