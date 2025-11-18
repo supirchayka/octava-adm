@@ -1,15 +1,6 @@
 import { serverApi } from "@/lib/server-fetch"
-import { PageForm, type PageField } from "../ui-page-form"
-
-const fields: PageField[] = [
-  { key: "heroTitle", label: "Hero title" },
-  { key: "heroSubtitle", label: "Hero subtitle", type: "textarea" },
-  { key: "heroCtaText", label: "CTA текст" },
-  { key: "heroCtaUrl", label: "CTA URL", type: "url" },
-  { key: "subheroTitle", label: "Subhero заголовок" },
-  { key: "subheroSubtitle", label: "Subhero текст", type: "textarea" },
-  { key: "interiorText", label: "Текст о клинике", type: "textarea" },
-]
+import { unwrapData } from "@/lib/utils"
+import { HomeForm } from "./home-form"
 
 async function fetchPage() {
   try {
@@ -22,14 +13,26 @@ async function fetchPage() {
 }
 
 export default async function HomeAdminPage() {
-  const data = await fetchPage()
-  return (
-    <PageForm
-      page="home"
-      title="Главная"
-      description="Hero, подзаголовки и интерьерный блок"
-      fields={fields}
-      initialData={data}
-    />
-  )
+  const [data, services] = await Promise.all([fetchPage(), fetchServices()])
+  return <HomeForm initialData={data} services={services} />
+}
+
+async function fetchServices() {
+  try {
+    const res = await serverApi(`/admin/catalog/services`)
+    if (!res.ok) return []
+    const payload = unwrapData(await res.json())
+    const list = Array.isArray(payload)
+      ? payload
+      : Array.isArray((payload as any)?.items)
+        ? (payload as any).items
+        : Array.isArray((payload as any)?.services)
+          ? (payload as any).services
+          : []
+    return list
+      .filter((item: any) => typeof item?.id === "number" && typeof item?.name === "string")
+      .map((item: any) => ({ id: item.id, name: item.name }))
+  } catch {
+    return []
+  }
 }

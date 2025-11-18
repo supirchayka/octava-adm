@@ -79,7 +79,7 @@ export function PageForm({ page, title, description, fields, initialData }: Prop
         <div className="grid gap-4">
           {fields.map((field) => (
             <div key={field.key} className="grid gap-1">
-              <label className="text-sm">{field.label}</label>
+              <label className="text-sm font-medium">{field.label}</label>
               {field.type === "textarea" ? (
                 <Textarea value={form[field.key]} onChange={(e) => updateField(field.key, e.target.value)} />
               ) : (
@@ -99,12 +99,6 @@ export function PageForm({ page, title, description, fields, initialData }: Prop
           <Button type="submit" disabled={saving}>{saving ? "Сохраняю..." : "Сохранить"}</Button>
         </div>
       </form>
-      {initialData && (
-        <div className="rounded-xl border p-4 text-sm text-muted-foreground">
-          <div className="font-semibold mb-2">Текущее содержимое (публичное)</div>
-          <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(initialData, null, 2)}</pre>
-        </div>
-      )}
     </div>
   )
 }

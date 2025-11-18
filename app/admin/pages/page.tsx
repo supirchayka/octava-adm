@@ -20,7 +20,6 @@ export default function PagesHub() {
           <Link key={page.slug} href={`/admin/pages/${page.slug}`} className="rounded-2xl border p-4 hover:border-primary transition">
             <div className="font-semibold">{page.title}</div>
             <div className="text-sm text-muted-foreground">{page.description}</div>
-            <div className="text-xs text-muted-foreground mt-2">PUT /admin/pages/{page.slug}</div>
           </Link>
         ))}
       </div>
