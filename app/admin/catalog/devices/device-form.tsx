@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { FileUploader } from "@/components/file-uploader"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
+import { unwrapData } from "@/lib/utils"
 
 type DeviceDetail = {
   id: number
@@ -55,7 +56,8 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
         if (!res.ok) throw new Error(await res.text())
         return res.json()
       })
-      .then((data: DeviceDetailResponse) => {
+      .then((payload: DeviceDetailResponse) => {
+        const data = unwrapData<DeviceDetailResponse>(payload)
         const heroFromImages = data.images?.find((img) => img.purpose === "HERO")?.file?.id ?? null
         const heroInline = data.heroImage?.fileId ?? null
         const galleryFromImages = (data.images

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
+import { unwrapData } from "@/lib/utils"
 
 export type PageField = {
   key: string
@@ -21,11 +22,9 @@ interface Props {
 }
 
 export function PageForm({ page, title, description, fields, initialData }: Props) {
-  const initialContent = initialData && typeof initialData === "object" && "data" in initialData && typeof (initialData as any).data === "object"
-    ? (initialData as any).data
-    : initialData
-  const content = (initialContent ?? null) as Record<string, any> | null
-  const initialSeo = ((initialData as any)?.seo ?? defaultSeoState) as SeoState
+  const normalized = initialData ? unwrapData<Record<string, any>>(initialData) : initialData
+  const content = (normalized ?? null) as Record<string, any> | null
+  const initialSeo = ((normalized as any)?.seo ?? defaultSeoState) as SeoState
 
   const [form, setForm] = useState(() => {
     const values: Record<string, string> = {}

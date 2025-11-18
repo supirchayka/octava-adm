@@ -24,14 +24,15 @@ export async function serverApi(path: string, init: RequestInit = {}, retry = tr
   const c = await cookies()
   const access = c.get(ACCESS_COOKIE)?.value
   const url = path.startsWith("http") ? path : `${backendURL()}${path}`
+  const headers = new Headers(init.headers as HeadersInit)
+  const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData
+  if (access && !headers.has("authorization")) headers.set("Authorization", `Bearer ${access}`)
+  if (!isFormData && init.body && !headers.has("content-type")) headers.set("Content-Type", "application/json")
+
   const res = await fetch(url, {
     ...init,
-    headers: {
-      "Content-Type": init.body instanceof FormData ? undefined as any : "application/json",
-      ...(init.headers || {}),
-      ...(access ? { Authorization: `Bearer ${access}` } : {}),
-    } as any,
-    cache: "no-store"
+    headers,
+    cache: "no-store",
   })
   if (res.status === 401 && retry) {
     const ok = await refreshTokens(c.get(REFRESH_COOKIE)?.value)

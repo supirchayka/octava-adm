@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileUploader } from "@/components/file-uploader"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
+import { unwrapData } from "@/lib/utils"
 
 const priceTypes = ["BASE", "EXTRA", "PACKAGE"]
 
@@ -122,7 +123,8 @@ export function ServiceFormDialog({
         if (!res.ok) throw new Error(await res.text())
         return res.json()
       })
-      .then((data: ServiceDetail) => {
+      .then((payload: ServiceDetail) => {
+        const data = unwrapData<ServiceDetail>(payload)
         const heroFromImages = data.images?.find((img) => img.purpose === "HERO")?.file?.id ?? null
         const heroFromInline = data.heroImage?.fileId ?? null
         const galleryFromImages = (data.images

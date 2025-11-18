@@ -17,3 +17,14 @@ export function absoluteUploadUrl(path: string) {
   if (path.startsWith("/uploads/")) return `${base}${path}`
   return path
 }
+
+export function unwrapData<T = any>(payload: unknown): T {
+  if (!payload || typeof payload !== "object") return payload as T
+  if (!("data" in (payload as Record<string, unknown>))) return payload as T
+
+  const { data, ...rest } = payload as Record<string, unknown>
+  if (!data || typeof data !== "object") return payload as T
+
+  const merged = { ...(data as Record<string, unknown>), ...rest }
+  return merged as T
+}

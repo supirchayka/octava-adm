@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { FileUploader } from "@/components/file-uploader"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
+import { unwrapData } from "@/lib/utils"
 
 interface CategoryDetail {
   id: number
@@ -44,7 +45,8 @@ export function EditCategoryDialog({
         if (!res.ok) throw new Error(await res.text())
         return res.json()
       })
-      .then((json: CategoryDetail) => {
+      .then((payload: CategoryDetail) => {
+        const json = unwrapData<CategoryDetail>(payload)
         const heroFromImages = json.images?.find((img) => img.purpose === "HERO")?.file?.id
         setName(json.name)
         setDescription(json.description ?? "")

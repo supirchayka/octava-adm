@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { unwrapData } from "@/lib/utils"
 
 type Org = {
   fullName?: string
@@ -27,7 +28,7 @@ export default function OrgPage() {
         const res = await fetch("/api/admin/org")
         if (!res.ok) throw new Error(await res.text())
         const data = await res.json()
-        setOrg(data || {})
+        setOrg(unwrapData<Org>(data) || {})
       } catch (e: any) {
         setError(e.message || "Не удалось получить данные организации")
       } finally {
