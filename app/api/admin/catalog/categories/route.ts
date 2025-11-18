@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
 import { serverApi } from "@/lib/server-fetch"
-import { backendURL } from "@/lib/utils"
+import { forwardResponse } from "@/lib/api-proxy"
 
 export async function GET() {
-  const res = await fetch(`${backendURL()}/service-categories`, { cache: "no-store" })
-  const j = await res.json()
-  return NextResponse.json(j)
+  const res = await serverApi(`/admin/catalog/categories`)
+  return forwardResponse(res)
 }
 
 export async function POST(req: Request) {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { absoluteUploadUrl } from "@/lib/utils"
 
@@ -12,6 +12,7 @@ type UploadedFile = {
 }
 
 export function FileUploader({ onUploaded }: { onUploaded: (f: UploadedFile) => void }) {
+  const inputRef = useRef<HTMLInputElement | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
@@ -37,7 +38,14 @@ export function FileUploader({ onUploaded }: { onUploaded: (f: UploadedFile) => 
       const res = await fetch("/api/admin/files/upload", { method: "POST", body: form })
       if (!res.ok) throw new Error(await res.text())
       const j = await res.json()
-      onUploaded(j)
+      const normalized: UploadedFile = {
+        ...j,
+        id: Number(j.id),
+      }
+      onUploaded(normalized)
+      setFile(null)
+      setPreview(null)
+      if (inputRef.current) inputRef.current.value = ""
     } catch (e: any) {
       setError(e.message || "Ошибка загрузки")
     } finally {
@@ -47,10 +55,17 @@ export function FileUploader({ onUploaded }: { onUploaded: (f: UploadedFile) => 
 
   return (
     <div className="grid gap-2">
-      <input type="file" onChange={onPick} />
+      <input ref={inputRef} type="file" onChange={onPick} className="text-sm" />
+      {file && (
+        <div className="text-xs text-muted-foreground">
+          {file.name} {(file.size / 1024).toFixed(0)} КБ
+        </div>
+      )}
       {preview && <img src={preview} alt="preview" className="max-h-40 rounded-lg border object-contain" />}
       {error && <div className="text-sm text-red-600">{error}</div>}
-      <Button onClick={upload} disabled={!file || loading}>{loading ? "Загружаю..." : "Загрузить"}</Button>
+      <Button type="button" onClick={upload} disabled={!file || loading}>
+        {loading ? "Загружаю..." : "Отправить файл"}
+      </Button>
     </div>
   )
 }
