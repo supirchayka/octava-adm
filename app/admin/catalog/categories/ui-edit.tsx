@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { FileUploader } from "@/components/file-uploader"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
-import { unwrapData } from "@/lib/utils"
+import { ImageField, type SimpleImageValue } from "@/components/image-field"
+import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
 
 interface CategoryDetail {
   id: number
@@ -34,7 +34,7 @@ export function EditCategoryDialog({
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [sortOrder, setSortOrder] = useState("")
-  const [heroId, setHeroId] = useState<number | null>(null)
+  const [heroImage, setHeroImage] = useState<SimpleImageValue>({ id: null, fileId: null, previewUrl: null })
   const [seo, setSeo] = useState<SeoState>(defaultSeoState)
 
   useEffect(() => {
@@ -47,11 +47,17 @@ export function EditCategoryDialog({
       })
       .then((payload: CategoryDetail) => {
         const json = unwrapData<CategoryDetail>(payload)
-        const heroFromImages = json.images?.find((img) => img.purpose === "HERO")?.file?.id
+        const heroFromImages = json.images?.find((img) => img.purpose === "HERO")
+        const heroPath = heroFromImages?.file?.path ?? (json.heroImage as any)?.file?.path ?? (json.heroImage as any)?.path ?? null
+        const heroFileId = json.heroImageFileId ?? json.heroImage?.fileId ?? heroFromImages?.file?.id ?? null
         setName(json.name)
         setDescription(json.description ?? "")
         setSortOrder(json.sortOrder?.toString() ?? "")
-        setHeroId(json.heroImageFileId ?? json.heroImage?.fileId ?? heroFromImages ?? null)
+        setHeroImage({
+          id: heroFromImages?.file?.id ?? json.heroImage?.fileId ?? null,
+          fileId: heroFileId ?? null,
+          previewUrl: heroPath ? absoluteUploadUrl(heroPath) : null,
+        })
         setSeo(json.seo ?? defaultSeoState)
       })
       .catch((e: any) => setError(e.message || "Не удалось загрузить"))
@@ -69,7 +75,7 @@ export function EditCategoryDialog({
           name,
           description: description || null,
           sortOrder: sortOrder ? Number(sortOrder) : null,
-          heroImageFileId: heroId,
+          heroImageFileId: heroImage.fileId,
           seo: prepareSeoPayload(seo),
         }),
       })
@@ -86,7 +92,7 @@ export function EditCategoryDialog({
     setName("")
     setDescription("")
     setSortOrder("")
-    setHeroId(null)
+    setHeroImage({ id: null, fileId: null, previewUrl: null })
     setSeo(defaultSeoState)
     setError(null)
     setLoading(false)
@@ -104,7 +110,7 @@ export function EditCategoryDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Категория #{categoryId}</DialogTitle>
-          <DialogDescription>Редактируйте поля и сохраните изменения</DialogDescription>
+          <DialogDescription>Обновите описание и визуал категории</DialogDescription>
         </DialogHeader>
         {loading && <div className="text-sm text-muted-foreground">Загрузка...</div>}
         {!loading && (
@@ -121,19 +127,16 @@ export function EditCategoryDialog({
               <label className="text-sm">Порядок сортировки</label>
               <Input type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
             </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium">HERO-изображение</div>
-              <div className="flex items-center gap-2">
-                <Input type="number" value={heroId ?? ""} onChange={(e) => setHeroId(e.target.value ? Number(e.target.value) : null)} placeholder="ID файла" />
-                <Button type="button" variant="outline" onClick={() => setHeroId(null)}>Очистить</Button>
-              </div>
-              <FileUploader onUploaded={(file) => setHeroId(file.id)} />
-              {heroId && <div className="text-xs text-muted-foreground">Текущее HERO id={heroId}</div>}
-            </div>
+            <ImageField
+              label="Обложка"
+              description="Это фото увидят на карточке категории и во всех списках."
+              value={heroImage}
+              onChange={setHeroImage}
+            />
             <SeoFields value={seo} onChange={setSeo} />
             {error && <div className="text-sm text-red-600">{error}</div>}
             <div className="flex gap-2">
-              <Button onClick={submit} disabled={saving}>{saving ? "Сохраняю..." : "Сохранить"}</Button>
+              <Button type="button" onClick={submit} disabled={saving}>{saving ? "Сохраняю..." : "Сохранить"}</Button>
               <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Закрыть</Button>
             </div>
           </div>

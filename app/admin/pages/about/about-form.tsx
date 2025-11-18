@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { FileUploader } from "@/components/file-uploader"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
 import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
+import type { SimpleImageValue } from "@/components/image-field"
 
 interface Props {
   initialData: Record<string, any> | null
@@ -25,12 +26,15 @@ export function AboutForm({ initialData }: Props) {
     heroCtaTitle: normalized?.heroCtaTitle ?? "",
     heroCtaSubtitle: normalized?.heroCtaSubtitle ?? "",
   })
-  const [heroImage, setHeroImage] = useState<{ fileId: number | null; previewUrl: string | null }>(() => {
-    const file = normalized?.heroImage
-    if (file?.id) {
-      return { fileId: file.id, previewUrl: file.path ? absoluteUploadUrl(file.path) : null }
+  const [heroImage, setHeroImage] = useState<SimpleImageValue>(() => {
+    const file = normalized?.heroImage as any
+    const previewPath = file?.path ?? file?.file?.path ?? null
+    const fileId = normalized?.heroImageFileId ?? file?.fileId ?? file?.id ?? null
+    return {
+      id: file?.id ?? null,
+      fileId: fileId ?? null,
+      previewUrl: previewPath ? absoluteUploadUrl(previewPath) : null,
     }
-    return { fileId: null, previewUrl: null }
   })
   const [facts, setFacts] = useState<FactState[]>(() => normalizeFacts(normalized?.facts))
   const [seo, setSeo] = useState<SeoState>(() => ((normalized?.seo as SeoState) ?? defaultSeoState))
@@ -146,9 +150,15 @@ export function AboutForm({ initialData }: Props) {
             {heroImage.previewUrl ? (
               <img src={heroImage.previewUrl} alt="Hero" className="h-48 w-full rounded-lg object-cover" />
             ) : (
-              <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">Добавьте фото, которое лучше всего отражает атмосферу.</div>
+              <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                Добавьте фото, которое лучше всего отражает атмосферу.
+              </div>
             )}
-            <FileUploader onUploaded={(uploaded) => setHeroImage({ fileId: uploaded.id, previewUrl: absoluteUploadUrl(uploaded.path) })} />
+            <FileUploader
+              onUploaded={(uploaded) =>
+                setHeroImage({ id: heroImage.id ?? null, fileId: uploaded.id, previewUrl: absoluteUploadUrl(uploaded.path) })
+              }
+            />
           </div>
         </section>
 

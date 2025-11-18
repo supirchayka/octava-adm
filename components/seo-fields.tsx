@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { FileUploader } from "@/components/file-uploader"
+import { absoluteUploadUrl } from "@/lib/utils"
 
 export type SeoState = {
   metaTitle?: string | null
@@ -15,11 +16,13 @@ export type SeoState = {
   ogTitle?: string | null
   ogDescription?: string | null
   ogImageId?: number | null
+  ogImage?: { id?: number | null; path?: string | null } | null
 }
 
 export const defaultSeoState: SeoState = {
   robotsIndex: true,
   robotsFollow: true,
+  ogImage: null,
 }
 
 export function prepareSeoPayload(seo?: SeoState) {
@@ -45,6 +48,7 @@ export function prepareSeoPayload(seo?: SeoState) {
 
 export function SeoFields({ value, onChange }: { value: SeoState; onChange: (next: SeoState) => void }) {
   const state = { ...defaultSeoState, ...value }
+  const ogPreview = state.ogImage?.path ? absoluteUploadUrl(state.ogImage.path) : null
 
   function update(key: keyof SeoState, val: string | number | boolean | null) {
     onChange({ ...state, [key]: val })
@@ -85,13 +89,36 @@ export function SeoFields({ value, onChange }: { value: SeoState; onChange: (nex
           <Textarea value={state.ogDescription ?? ""} onChange={(e) => update("ogDescription", e.target.value)} placeholder="Описание карточки" />
         </div>
         <div className="grid gap-2">
-          <Label className="text-sm">OG image file ID</Label>
-          <div className="flex gap-2">
-            <Input type="number" value={state.ogImageId ?? ""} onChange={(e) => update("ogImageId", e.target.value ? Number(e.target.value) : null)} placeholder="123" />
-            <Button type="button" variant="outline" onClick={() => update("ogImageId", null)}>Очистить</Button>
+          <Label className="text-sm">Изображение для соцсетей</Label>
+          {ogPreview ? (
+            <img src={ogPreview} alt="OG preview" className="h-32 w-full rounded-lg object-cover" />
+          ) : state.ogImageId ? (
+            <div className="text-xs text-muted-foreground">Изображение прикреплено.</div>
+          ) : (
+            <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+              Пока не выбрано изображение
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <FileUploader
+              onUploaded={(file) =>
+                onChange({
+                  ...state,
+                  ogImageId: file.id,
+                  ogImage: { id: file.id, path: file.path },
+                })
+              }
+            />
+            {state.ogImageId && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onChange({ ...state, ogImageId: null, ogImage: null })}
+              >
+                Очистить
+              </Button>
+            )}
           </div>
-          <FileUploader onUploaded={(file) => update("ogImageId", file.id)} />
-          {state.ogImageId && <div className="text-xs text-muted-foreground">Текущее изображение id={state.ogImageId}</div>}
         </div>
       </div>
     </div>

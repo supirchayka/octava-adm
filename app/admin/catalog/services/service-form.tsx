@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileUploader } from "@/components/file-uploader"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
-import { unwrapData } from "@/lib/utils"
+import { ImageField, type SimpleImageValue } from "@/components/image-field"
+import { ImageListField } from "@/components/image-list-field"
+import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
 
 const priceTypes = ["BASE", "EXTRA", "PACKAGE"]
 
@@ -28,9 +29,9 @@ type ServiceDetail = {
   ctaUrl?: string | null
   sortOrder?: number | null
   heroImageFileId?: number | null
-  heroImage?: { fileId?: number | null } | null
+  heroImage?: { fileId?: number | null; file?: { path?: string | null } } | null
   galleryImageFileIds?: number[] | null
-  images?: Array<{ purpose: "HERO" | "GALLERY"; order: number; file?: { id: number } }>
+  images?: Array<{ purpose: "HERO" | "GALLERY"; order: number; file?: { id: number; path?: string | null } }>
   devices?: Array<{ deviceId?: number | null; device?: { id: number } }>
   usedDevices?: Array<{ id?: number; deviceId?: number; device?: { id: number } } | number>
   servicePricesExtended?: Array<{
@@ -102,8 +103,8 @@ export function ServiceFormDialog({
     ctaUrl: "",
     sortOrder: "",
   })
-  const [heroId, setHeroId] = useState<number | null>(null)
-  const [gallery, setGallery] = useState("")
+  const [heroImage, setHeroImage] = useState<SimpleImageValue>({ id: null, fileId: null, previewUrl: null })
+  const [galleryImages, setGalleryImages] = useState<SimpleImageValue[]>([])
   const [selectedDevices, setSelectedDevices] = useState<number[]>([])
   const [prices, setPrices] = useState<PriceRow[]>([])
   const [seo, setSeo] = useState<SeoState>(defaultSeoState)
@@ -125,14 +126,13 @@ export function ServiceFormDialog({
       })
       .then((payload: ServiceDetail) => {
         const data = unwrapData<ServiceDetail>(payload)
-        const heroFromImages = data.images?.find((img) => img.purpose === "HERO")?.file?.id ?? null
-        const heroFromInline = data.heroImage?.fileId ?? null
-        const galleryFromImages = (data.images
-          ?.filter((img) => img.purpose === "GALLERY")
-          .map((img) => img.file?.id)
-          .filter(Boolean) as number[] | undefined) || []
-        const galleryFromField = data.galleryImageFileIds
-        const galleryIds = (galleryFromField ?? galleryFromImages).filter(Boolean)
+        const heroFromImages = data.images?.find((img) => img.purpose === "HERO")
+        const heroPath = heroFromImages?.file?.path ?? (data.heroImage as any)?.file?.path ?? (data.heroImage as any)?.path ?? null
+        const heroFileId = data.heroImageFileId ?? data.heroImage?.fileId ?? heroFromImages?.file?.id ?? null
+        const galleryFromImages = (data.images ?? [])
+          .filter((img) => img.purpose === "GALLERY")
+          .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
+        const galleryFromField = data.galleryImageFileIds ?? []
         const priceSource = data.servicePricesExtended ?? data.pricesExtended ?? []
         const devicesSource = data.usedDevices ?? data.devices ?? []
         setForm({
@@ -147,8 +147,28 @@ export function ServiceFormDialog({
           ctaUrl: data.ctaUrl ?? "",
           sortOrder: data.sortOrder?.toString() ?? "",
         })
-        setHeroId(data.heroImageFileId ?? heroFromInline ?? heroFromImages ?? null)
-        setGallery((galleryIds ?? []).join(", "))
+        setHeroImage({
+          id: heroFromImages?.file?.id ?? data.heroImage?.fileId ?? null,
+          fileId: heroFileId ?? null,
+          previewUrl: heroPath ? absoluteUploadUrl(heroPath) : null,
+        })
+        if (galleryFromImages.length) {
+          setGalleryImages(
+            galleryFromImages.map((img) => ({
+              id: img.file?.id ?? null,
+              fileId: img.file?.id ?? null,
+              previewUrl: img.file?.path ? absoluteUploadUrl(img.file.path) : null,
+            }))
+          )
+        } else {
+          setGalleryImages(
+            (galleryFromField || []).map((fileId) => ({
+              id: null,
+              fileId: fileId ?? null,
+              previewUrl: null,
+            }))
+          )
+        }
         setSelectedDevices(
           devicesSource
             .map((d) => {
@@ -190,8 +210,8 @@ export function ServiceFormDialog({
       ctaUrl: "",
       sortOrder: "",
     })
-    setHeroId(null)
-    setGallery("")
+    setHeroImage({ id: null, fileId: null, previewUrl: null })
+    setGalleryImages([])
     setSelectedDevices([])
     setPrices([])
     setSeo(defaultSeoState)
@@ -225,12 +245,9 @@ export function ServiceFormDialog({
     setSaving(true)
     setError(null)
     try {
-      const galleryIds = gallery
-        .split(",")
-        .map((chunk) => chunk.trim())
-        .filter(Boolean)
-        .map((chunk) => Number(chunk))
-        .filter((n) => !Number.isNaN(n))
+      const galleryIds = galleryImages
+        .map((item) => item.fileId)
+        .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
 
       const payload: Record<string, any> = {
         categoryId: Number(form.categoryId),
@@ -243,7 +260,7 @@ export function ServiceFormDialog({
         ctaText: form.ctaText || null,
         ctaUrl: form.ctaUrl || null,
         sortOrder: form.sortOrder ? Number(form.sortOrder) : null,
-        heroImageFileId: heroId,
+        heroImageFileId: heroImage.fileId,
         galleryImageFileIds: galleryIds,
         usedDeviceIds: selectedDevices,
         servicePricesExtended: prices
@@ -290,10 +307,10 @@ export function ServiceFormDialog({
           {triggerLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>Поля соответствуют /admin/catalog/services (см. ТЗ)</DialogDescription>
+          <DialogDescription>Заполните карточку услуги: текст, визуал, аппараты и SEO.</DialogDescription>
         </DialogHeader>
         {loading && <div className="text-sm text-muted-foreground">Загрузка...</div>}
         {!loading && (
@@ -358,21 +375,20 @@ export function ServiceFormDialog({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="text-sm font-medium">HERO изображение</div>
-              <div className="flex gap-2">
-                <Input type="number" value={heroId ?? ""} onChange={(e) => setHeroId(e.target.value ? Number(e.target.value) : null)} placeholder="ID файла" />
-                <Button type="button" variant="outline" onClick={() => setHeroId(null)}>Очистить</Button>
-              </div>
-              <FileUploader onUploaded={(file) => setHeroId(file.id)} />
-              {heroId && <div className="text-xs text-muted-foreground">Текущее HERO id={heroId}</div>}
-            </div>
+            <ImageField
+              label="Обложка услуги"
+              description="Покажите процедуру крупным планом — этот кадр увидят в каталоге и на странице."
+              value={heroImage}
+              onChange={setHeroImage}
+            />
 
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Галерея (через запятую)</div>
-              <Textarea value={gallery} onChange={(e) => setGallery(e.target.value)} placeholder="123, 456, 789" />
-              <FileUploader onUploaded={(file) => setGallery((prev) => (prev ? `${prev}, ${file.id}` : String(file.id)))} />
-            </div>
+            <ImageListField
+              title="Галерея"
+              description="Добавьте несколько кадров, чтобы рассказать историю процедуры. Порядок сохранится."
+              items={galleryImages}
+              onChange={setGalleryImages}
+              emptyHint="Пока нет фотографий — добавьте первую"
+            />
 
             <div className="space-y-2">
               <div className="text-sm font-medium">Аппараты</div>

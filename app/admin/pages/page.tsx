@@ -13,7 +13,7 @@ export default function PagesHub() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-semibold mb-2">Страницы</h1>
-        <p className="text-sm text-muted-foreground">Редактируйте контент и SEO блоков /pages/*</p>
+        <p className="text-sm text-muted-foreground">Выберите нужную страницу и обновите тексты, изображения и SEO.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         {pages.map((page) => (

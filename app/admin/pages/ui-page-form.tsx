@@ -22,14 +22,13 @@ interface Props {
 }
 
 export function PageForm({ page, title, description, fields, initialData }: Props) {
-  const normalized = initialData ? unwrapData<Record<string, any>>(initialData) : initialData
-  const content = (normalized ?? null) as Record<string, any> | null
+  const normalized = initialData ? unwrapData<Record<string, any>>(initialData) : null
   const initialSeo = ((normalized as any)?.seo ?? defaultSeoState) as SeoState
 
   const [form, setForm] = useState(() => {
     const values: Record<string, string> = {}
     fields.forEach((field) => {
-      values[field.key] = content?.[field.key] ?? ""
+      values[field.key] = (normalized as any)?.[field.key] ?? ""
     })
     return values
   })

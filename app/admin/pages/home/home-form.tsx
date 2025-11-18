@@ -7,20 +7,19 @@ import { Button } from "@/components/ui/button"
 import { FileUploader } from "@/components/file-uploader"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
 import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
+import type { SimpleImageValue } from "@/components/image-field"
 
 interface Props {
   initialData: Record<string, any> | null
   services: { id: number; name: string }[]
 }
 
-type MediaState = {
-  fileId: number | null
-  previewUrl: string | null
+type MediaState = SimpleImageValue & {
   alt: string
   caption: string
 }
 
-type DirectionState = { serviceId: number | null }
+type DirectionState = { id?: number | null; serviceId: number | null }
 
 type HomeContentKeys =
   | "heroTitle"
@@ -44,7 +43,7 @@ export function HomeForm({ initialData, services }: Props) {
   })
   const [heroImages, setHeroImages] = useState<MediaState[]>(() => {
     const list = normalizeMedia(normalized?.heroImages)
-    return list.length ? list : [{ fileId: null, previewUrl: null, alt: "", caption: "" }]
+    return list.length ? list : [{ id: null, fileId: null, previewUrl: null, alt: "", caption: "" }]
   })
   const [interiorImages, setInteriorImages] = useState<MediaState[]>(() => normalizeMedia(normalized?.interiorImages))
   const [directions, setDirections] = useState<DirectionState[]>(() => ensureFourDirections(normalized?.directions))
@@ -60,7 +59,7 @@ export function HomeForm({ initialData, services }: Props) {
   }
 
   function updateDirection(index: number, serviceId: number | null) {
-    setDirections((prev) => prev.map((item, idx) => (idx === index ? { serviceId } : item)))
+    setDirections((prev) => prev.map((item, idx) => (idx === index ? { ...item, serviceId } : item)))
   }
 
   async function submit(e: React.FormEvent) {
@@ -69,15 +68,15 @@ export function HomeForm({ initialData, services }: Props) {
     setError(null)
     setMessage(null)
 
-    const heroValid = heroImages.length > 0 && heroImages.every((img) => img.fileId)
-    if (!heroValid) {
+    const heroPayload = buildMediaPayload(heroImages)
+    if (!heroPayload.length) {
       setError("Добавьте хотя бы одну обложку и загрузите для неё изображение")
       setSaving(false)
       return
     }
 
-    const directionsValid = directions.every((dir) => dir.serviceId)
-    if (!directionsValid) {
+    const directionsPayload = buildDirectionsPayload(directions)
+    if (!directionsPayload) {
       setError("Выберите четыре услуги для блока направлений")
       setSaving(false)
       return
@@ -88,21 +87,9 @@ export function HomeForm({ initialData, services }: Props) {
       ;(Object.keys(content) as HomeContentKeys[]).forEach((key) => {
         payload[key] = content[key] === "" ? null : content[key]
       })
-      payload.heroImages = heroImages.map((img, index) => ({
-        fileId: img.fileId,
-        alt: img.alt || null,
-        caption: img.caption || null,
-        order: index + 1,
-      }))
-      payload.interiorImages = interiorImages
-        .filter((img) => img.fileId)
-        .map((img, index) => ({
-          fileId: img.fileId,
-          alt: img.alt || null,
-          caption: img.caption || null,
-          order: index + 1,
-        }))
-      payload.directions = directions.map((dir, index) => ({ serviceId: dir.serviceId, order: index + 1 }))
+      payload.heroImages = heroPayload
+      payload.interiorImages = buildMediaPayload(interiorImages)
+      payload.directions = directionsPayload
       const seoPayload = prepareSeoPayload(seo)
       if (seoPayload) payload.seo = seoPayload
 
@@ -229,8 +216,13 @@ function normalizeMedia(list: any): MediaState[] {
   return [...list]
     .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
     .map((item) => ({
-      fileId: item?.fileId ?? item?.file?.id ?? null,
-      previewUrl: item?.file?.path ? absoluteUploadUrl(item.file.path) : item?.path ? absoluteUploadUrl(item.path) : null,
+      id: typeof item?.id === "number" ? item.id : null,
+      fileId: ensureNumber(item?.fileId ?? item?.file?.id),
+      previewUrl: item?.file?.path
+        ? absoluteUploadUrl(item.file.path)
+        : item?.path
+          ? absoluteUploadUrl(item.path)
+          : null,
       alt: item?.alt ?? "",
       caption: item?.caption ?? "",
     }))
@@ -240,13 +232,64 @@ function ensureFourDirections(list: any): DirectionState[] {
   const normalized: DirectionState[] = Array.isArray(list)
     ? [...list]
         .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
-        .map((item) => ({ serviceId: item?.serviceId ?? null }))
+        .map((item) => ({
+          id: typeof item?.id === "number" ? item.id : null,
+          serviceId:
+            ensureNumber(
+              typeof item?.serviceId === "number"
+                ? item.serviceId
+                : typeof item?.service?.id === "number"
+                  ? item.service.id
+                  : null
+            ),
+        }))
     : []
 
   while (normalized.length < 4) {
-    normalized.push({ serviceId: null })
+    normalized.push({ id: null, serviceId: null })
   }
   return normalized.slice(0, 4)
+}
+
+type MediaPayload = { fileId: number; alt: string | null; caption: string | null; order: number }
+
+function buildMediaPayload(list: MediaState[]): MediaPayload[] {
+  return list
+    .map((item, index) => {
+      const fileId = ensureNumber(item.fileId)
+      if (!fileId) return null
+      const alt = item.alt?.trim() ?? ""
+      const caption = item.caption?.trim() ?? ""
+      return {
+        fileId,
+        alt: alt === "" ? null : alt,
+        caption: caption === "" ? null : caption,
+        order: index + 1,
+      }
+    })
+    .filter((item): item is MediaPayload => item !== null)
+}
+
+type DirectionPayload = { serviceId: number; order: number }
+
+function buildDirectionsPayload(list: DirectionState[]): DirectionPayload[] | null {
+  if (list.length === 0) return null
+  const payload: DirectionPayload[] = []
+  for (let index = 0; index < list.length; index += 1) {
+    const candidate = ensureNumber(list[index]?.serviceId)
+    if (!candidate) return null
+    payload.push({ serviceId: candidate, order: index + 1 })
+  }
+  return payload
+}
+
+function ensureNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
 }
 
 interface MediaSectionProps {
@@ -287,7 +330,17 @@ function MediaSection({ title, description, items, onChange, allowRemove = true 
             ) : (
               <div className="text-sm text-muted-foreground">Пока нет изображения</div>
             )}
-            <FileUploader onUploaded={(uploaded) => onChange(items.map((img, idx) => (idx === index ? { ...img, fileId: uploaded.id, previewUrl: absoluteUploadUrl(uploaded.path) } : img)))} />
+            <FileUploader
+              onUploaded={(uploaded) =>
+                onChange(
+                  items.map((img, idx) =>
+                    idx === index
+                      ? { ...img, fileId: uploaded.id, previewUrl: absoluteUploadUrl(uploaded.path) }
+                      : img
+                  )
+                )
+              }
+            />
             <div className="grid gap-2 md:grid-cols-2">
               <div className="grid gap-1">
                 <label className="text-sm font-medium">Подпись (необязательно)</label>
@@ -300,7 +353,11 @@ function MediaSection({ title, description, items, onChange, allowRemove = true 
             </div>
           </div>
         ))}
-        <Button type="button" variant="outline" onClick={() => onChange([...items, { fileId: null, previewUrl: null, alt: "", caption: "" }])}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => onChange([...items, { id: null, fileId: null, previewUrl: null, alt: "", caption: "" }])}
+        >
           + Добавить фото
         </Button>
       </div>

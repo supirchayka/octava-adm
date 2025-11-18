@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { FileUploader } from "@/components/file-uploader"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
-import { unwrapData } from "@/lib/utils"
+import { ImageField, type SimpleImageValue } from "@/components/image-field"
+import { ImageListField } from "@/components/image-list-field"
+import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
 
 type DeviceDetail = {
   id: number
@@ -17,8 +18,8 @@ type DeviceDetail = {
   principle: string
   safetyNotes?: string | null
   heroImageFileId?: number | null
-  heroImage?: { fileId?: number | null } | null
-  images?: Array<{ purpose: "HERO" | "GALLERY"; file?: { id: number } }>
+  heroImage?: { fileId?: number | null; file?: { path?: string | null } } | null
+  images?: Array<{ purpose: "HERO" | "GALLERY"; order?: number | null; file?: { id: number; path?: string | null } }>
   galleryImageFileIds?: number[]
   seo?: SeoState
 }
@@ -43,8 +44,8 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
     principle: "",
     safetyNotes: "",
   })
-  const [heroId, setHeroId] = useState<number | null>(null)
-  const [gallery, setGallery] = useState("")
+  const [heroImage, setHeroImage] = useState<SimpleImageValue>({ id: null, fileId: null, previewUrl: null })
+  const [galleryImages, setGalleryImages] = useState<SimpleImageValue[]>([])
   const [seo, setSeo] = useState<SeoState>(defaultSeoState)
 
   useEffect(() => {
@@ -58,14 +59,13 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
       })
       .then((payload: DeviceDetailResponse) => {
         const data = unwrapData<DeviceDetailResponse>(payload)
-        const heroFromImages = data.images?.find((img) => img.purpose === "HERO")?.file?.id ?? null
-        const heroInline = data.heroImage?.fileId ?? null
-        const galleryFromImages = (data.images
-          ?.filter((img) => img.purpose === "GALLERY")
-          .map((img) => img.file?.id)
-          .filter(Boolean) as number[] | undefined) || []
-        const galleryFromField = data.galleryImageFileIds
-        const galleryIds = (galleryFromField ?? galleryFromImages).filter(Boolean)
+        const heroFromImages = data.images?.find((img) => img.purpose === "HERO")
+        const heroPath = heroFromImages?.file?.path ?? (data.heroImage as any)?.file?.path ?? (data.heroImage as any)?.path ?? null
+        const heroFileId = data.heroImageFileId ?? data.heroImage?.fileId ?? heroFromImages?.file?.id ?? null
+        const galleryFromImages = (data.images ?? [])
+          .filter((img) => img.purpose === "GALLERY")
+          .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
+        const galleryFromField = data.galleryImageFileIds ?? []
         setForm({
           brand: data.brand ?? "",
           model: data.model ?? "",
@@ -73,8 +73,24 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
           principle: data.principle ?? "",
           safetyNotes: data.safetyNotes ?? "",
         })
-        setHeroId(data.heroImageFileId ?? heroInline ?? heroFromImages ?? null)
-        setGallery((galleryIds ?? []).join(", "))
+        setHeroImage({
+          id: heroFromImages?.file?.id ?? data.heroImage?.fileId ?? null,
+          fileId: heroFileId ?? null,
+          previewUrl: heroPath ? absoluteUploadUrl(heroPath) : null,
+        })
+        if (galleryFromImages.length) {
+          setGalleryImages(
+            galleryFromImages.map((img) => ({
+              id: img.file?.id ?? null,
+              fileId: img.file?.id ?? null,
+              previewUrl: img.file?.path ? absoluteUploadUrl(img.file.path) : null,
+            }))
+          )
+        } else {
+          setGalleryImages(
+            (galleryFromField || []).map((fileId) => ({ id: null, fileId: fileId ?? null, previewUrl: null }))
+          )
+        }
         setSeo(data.seo ?? defaultSeoState)
       })
       .catch((e: any) => setError(e.message || "Не удалось загрузить данные"))
@@ -83,8 +99,8 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
 
   function resetState() {
     setForm({ brand: "", model: "", positioning: "", principle: "", safetyNotes: "" })
-    setHeroId(null)
-    setGallery("")
+    setHeroImage({ id: null, fileId: null, previewUrl: null })
+    setGalleryImages([])
     setSeo(defaultSeoState)
     setError(null)
     setLoading(false)
@@ -96,12 +112,9 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
     setSaving(true)
     setError(null)
     try {
-      const galleryIds = gallery
-        .split(",")
-        .map((chunk) => chunk.trim())
-        .filter(Boolean)
-        .map((chunk) => Number(chunk))
-        .filter((n) => !Number.isNaN(n))
+      const galleryIds = galleryImages
+        .map((item) => item.fileId)
+        .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
 
       const payload: Record<string, any> = {
         brand: form.brand,
@@ -109,7 +122,7 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
         positioning: form.positioning,
         principle: form.principle,
         safetyNotes: form.safetyNotes || null,
-        heroImageFileId: heroId,
+        heroImageFileId: heroImage.fileId,
         galleryImageFileIds: galleryIds,
         seo: prepareSeoPayload(seo),
       }
@@ -142,10 +155,10 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
       <DialogTrigger asChild>
         <Button variant={deviceId ? "outline" : "default"}>{triggerLabel}</Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>Поля POST/PUT /admin/catalog/devices</DialogDescription>
+          <DialogDescription>Заполните карточку аппарата и прикрепите фото.</DialogDescription>
         </DialogHeader>
         {loading && <div className="text-sm text-muted-foreground">Загрузка...</div>}
         {!loading && (
@@ -157,19 +170,19 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
               <Textarea value={form.principle} onChange={(e) => setForm((prev) => ({ ...prev, principle: e.target.value }))} placeholder="Принцип работы" required />
               <Textarea value={form.safetyNotes} onChange={(e) => setForm((prev) => ({ ...prev, safetyNotes: e.target.value }))} placeholder="Заметки по безопасности" />
             </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium">HERO изображение</div>
-              <div className="flex gap-2">
-                <Input type="number" value={heroId ?? ""} onChange={(e) => setHeroId(e.target.value ? Number(e.target.value) : null)} placeholder="ID файла" />
-                <Button type="button" variant="outline" onClick={() => setHeroId(null)}>Очистить</Button>
-              </div>
-              <FileUploader onUploaded={(file) => setHeroId(file.id)} />
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Галерея (через запятую)</div>
-              <Textarea value={gallery} onChange={(e) => setGallery(e.target.value)} placeholder="401, 402" />
-              <FileUploader onUploaded={(file) => setGallery((prev) => (prev ? `${prev}, ${file.id}` : String(file.id)))} />
-            </div>
+            <ImageField
+              label="Обложка аппарата"
+              description="Покажите устройство целиком — это фото увидят на странице аппарата."
+              value={heroImage}
+              onChange={setHeroImage}
+            />
+            <ImageListField
+              title="Галерея"
+              description="Добавьте ракурсы, рабочие моменты и детали."
+              items={galleryImages}
+              onChange={setGalleryImages}
+              emptyHint="Добавьте хотя бы один кадр"
+            />
             <SeoFields value={seo} onChange={setSeo} />
             {error && <div className="text-sm text-red-600">{error}</div>}
             <div className="flex gap-2">

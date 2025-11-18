@@ -145,7 +145,6 @@ export default function ServicesPage() {
           </table>
         </div>
       )}
-      <p className="text-xs text-gray-500">Создание/обновление услуг делается через POST/PUT /admin/catalog/services (см. ADMIN.md §4.2).</p>
     </div>
   )
 }

@@ -40,7 +40,7 @@ export default function DevicesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Аппараты</h1>
-          <p className="text-sm text-muted-foreground">CRUD для /admin/catalog/devices</p>
+          <p className="text-sm text-muted-foreground">Ведите базу оборудования и обновляйте фото в пару кликов.</p>
         </div>
         <DeviceFormDialog triggerLabel="+ Добавить аппарат" onCompleted={loadDevices} />
       </div>
@@ -54,7 +54,7 @@ export default function DevicesPage() {
               <tr>
                 <th className="text-left p-2">Бренд</th>
                 <th className="text-left p-2">Модель</th>
-                <th className="text-left p-2">Slug</th>
+                <th className="text-left p-2">Адрес</th>
                 <th className="text-left p-2">Обновлено</th>
                 <th className="text-left p-2">Действия</th>
               </tr>
@@ -64,7 +64,7 @@ export default function DevicesPage() {
                 <tr key={device.id} className="border-t">
                   <td className="p-2">{device.brand}</td>
                   <td className="p-2">{device.model}</td>
-                  <td className="p-2">{device.slug}</td>
+                  <td className="p-2 text-muted-foreground">/{device.slug}</td>
                   <td className="p-2 text-muted-foreground">{device.updatedAt ? new Date(device.updatedAt).toLocaleString() : "—"}</td>
                   <td className="p-2">
                     <DeviceFormDialog
