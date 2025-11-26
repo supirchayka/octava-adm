@@ -321,7 +321,9 @@
 Каждый маршрут возвращает `204 No Content` при успехе. Передаём только изменяемые поля.
 
 ### PUT `/admin/pages/home`
-Поля: `heroTitle`, `heroSubtitle`, `heroCtaText`, `heroCtaUrl`, `subheroTitle`, `subheroSubtitle`, `interiorText`, `seo`.
+Поля: `heroTitle`, `heroSubtitle`, `heroCtaText`, `heroCtaUrl`, `subHero`, `subheroTitle`, `subheroSubtitle`, `interiorText`, `seo`.
+
+`subHero` — объект с полями `title`, `subtitle`, `image`. В `image` передаём `fileId` загруженного файла и необязательный `alt`.
 
 **Body пример**
 ```json
@@ -331,6 +333,14 @@
   "heroCtaText": "Записаться",
   "heroCtaUrl": "/contacts",
   "subheroTitle": "Компетенции",
+  "subHero": {
+    "title": "Комплексный подход",
+    "subtitle": "Индивидуальные протоколы, безопасные технологии и забота о каждом пациенте",
+    "image": {
+      "fileId": 6,
+      "alt": "Комплексный подход к каждому пациенту"
+    }
+  },
   "interiorText": "Новые фото интерьера",
   "seo": { "metaTitle": "Главная OCTAVA" }
 }
