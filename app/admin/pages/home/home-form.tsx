@@ -19,6 +19,8 @@ type MediaState = SimpleImageValue & {
   caption: string
 }
 
+type SubheroImageState = SimpleImageValue & { alt: string }
+
 type DirectionState = { id?: number | null; serviceId: number | null }
 
 type HomeContentKeys =
@@ -37,8 +39,8 @@ export function HomeForm({ initialData, services }: Props) {
     heroSubtitle: normalized?.heroSubtitle ?? "",
     heroCtaText: normalized?.heroCtaText ?? "",
     heroCtaUrl: normalized?.heroCtaUrl ?? "",
-    subheroTitle: normalized?.subheroTitle ?? "",
-    subheroSubtitle: normalized?.subheroSubtitle ?? "",
+    subheroTitle: normalized?.subHero?.title ?? normalized?.subheroTitle ?? "",
+    subheroSubtitle: normalized?.subHero?.subtitle ?? normalized?.subheroSubtitle ?? "",
     interiorText: normalized?.interiorText ?? "",
   })
   const [heroImages, setHeroImages] = useState<MediaState[]>(() => {
@@ -47,6 +49,9 @@ export function HomeForm({ initialData, services }: Props) {
   })
   const [interiorImages, setInteriorImages] = useState<MediaState[]>(() => normalizeMedia(normalized?.interiorImages))
   const [directions, setDirections] = useState<DirectionState[]>(() => ensureFourDirections(normalized?.directions))
+  const [subheroImage, setSubheroImage] = useState<SubheroImageState>(() =>
+    normalizeSubheroImage(normalized?.subHero?.image ?? normalized?.subheroImage)
+  )
   const [seo, setSeo] = useState<SeoState>(() => ((normalized?.seo as SeoState) ?? defaultSeoState))
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -90,6 +95,16 @@ export function HomeForm({ initialData, services }: Props) {
       payload.heroImages = heroPayload
       payload.interiorImages = buildMediaPayload(interiorImages)
       payload.directions = directionsPayload
+      payload.subHero = {
+        title: content.subheroTitle === "" ? null : content.subheroTitle,
+        subtitle: content.subheroSubtitle === "" ? null : content.subheroSubtitle,
+        image: subheroImage.fileId
+          ? {
+              fileId: subheroImage.fileId,
+              alt: subheroImage.alt.trim() === "" ? null : subheroImage.alt.trim(),
+            }
+          : null,
+      }
       const seoPayload = prepareSeoPayload(seo)
       if (seoPayload) payload.seo = seoPayload
 
@@ -143,6 +158,53 @@ export function HomeForm({ initialData, services }: Props) {
             <div className="grid gap-1 md:col-span-2">
               <label className="text-sm font-medium">Текст под заголовком</label>
               <Textarea value={content.subheroSubtitle} onChange={(e) => updateContent("subheroSubtitle", e.target.value)} placeholder="Добавьте пару тёплых фактов о сервисе" />
+            </div>
+            <div className="grid gap-3 md:col-span-2">
+              <div>
+                <div className="text-sm font-medium">Фон для блока subhero</div>
+                <p className="text-sm text-muted-foreground">Загрузите фото, которое будет под подзаголовком.</p>
+              </div>
+              <div className="space-y-3 rounded-2xl border p-4">
+                {subheroImage.previewUrl ? (
+                  <img src={subheroImage.previewUrl} alt="Фон subhero" className="h-48 w-full rounded-lg object-cover" />
+                ) : (
+                  <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                    Пока нет изображения
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <FileUploader
+                    onUploaded={(uploaded) =>
+                      setSubheroImage({
+                        id: subheroImage.id ?? null,
+                        fileId: uploaded.id,
+                        previewUrl: absoluteUploadUrl(uploaded.path),
+                        alt: subheroImage.alt,
+                      })
+                    }
+                  />
+                  {subheroImage.fileId && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setSubheroImage({ id: subheroImage.id ?? null, fileId: null, previewUrl: null, alt: subheroImage.alt })
+                      }
+                    >
+                      Очистить
+                    </Button>
+                  )}
+                </div>
+                <div className="grid gap-1">
+                  <label className="text-sm font-medium">Alt-текст</label>
+                  <Input
+                    value={subheroImage.alt}
+                    onChange={(e) => setSubheroImage((prev) => ({ ...prev, alt: e.target.value }))}
+                    placeholder="Например: Комплексный подход к каждому пациенту"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -226,6 +288,17 @@ function normalizeMedia(list: any): MediaState[] {
       alt: item?.alt ?? "",
       caption: item?.caption ?? "",
     }))
+}
+
+function normalizeSubheroImage(value: any): SubheroImageState {
+  const fileId = ensureNumber(value?.fileId ?? value?.id ?? value?.file?.id)
+  const previewPath = value?.path ?? value?.url ?? value?.file?.path ?? null
+  return {
+    id: ensureNumber(value?.id),
+    fileId: fileId ?? null,
+    previewUrl: previewPath ? absoluteUploadUrl(previewPath) : null,
+    alt: value?.alt ?? "",
+  }
 }
 
 function ensureFourDirections(list: any): DirectionState[] {
