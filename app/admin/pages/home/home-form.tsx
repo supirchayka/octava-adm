@@ -11,7 +11,7 @@ import type { SimpleImageValue } from "@/components/image-field"
 
 interface Props {
   initialData: Record<string, any> | null
-  services: { id: number; name: string }[]
+  categories: { id: number; name: string }[]
 }
 
 type MediaState = SimpleImageValue & {
@@ -21,7 +21,7 @@ type MediaState = SimpleImageValue & {
 
 type SubheroImageState = SimpleImageValue & { alt: string }
 
-type DirectionState = { id?: number | null; serviceId: number | null }
+type DirectionState = { id?: number | null; categoryId: number | null }
 
 type HomeContentKeys =
   | "heroTitle"
@@ -32,7 +32,7 @@ type HomeContentKeys =
   | "subheroSubtitle"
   | "interiorText"
 
-export function HomeForm({ initialData, services }: Props) {
+export function HomeForm({ initialData, categories }: Props) {
   const normalized = initialData ? unwrapData<Record<string, any>>(initialData) : null
   const normalizedHero = normalized?.hero ?? {}
   const normalizedInterior = normalized?.interior ?? {}
@@ -62,14 +62,14 @@ export function HomeForm({ initialData, services }: Props) {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const serviceOptions = useMemo(() => [...services].sort((a, b) => a.name.localeCompare(b.name)), [services])
+  const categoryOptions = useMemo(() => [...categories].sort((a, b) => a.name.localeCompare(b.name)), [categories])
 
   function updateContent(key: HomeContentKeys, value: string) {
     setContent((prev) => ({ ...prev, [key]: value }))
   }
 
-  function updateDirection(index: number, serviceId: number | null) {
-    setDirections((prev) => prev.map((item, idx) => (idx === index ? { ...item, serviceId } : item)))
+  function updateDirection(index: number, categoryId: number | null) {
+    setDirections((prev) => prev.map((item, idx) => (idx === index ? { ...item, categoryId } : item)))
   }
 
   const scheduleAutoSave = useCallback(() => setAutoSaveRequested(true), [])
@@ -91,7 +91,7 @@ export function HomeForm({ initialData, services }: Props) {
 
       const directionsPayload = buildDirectionsPayload(directions)
       if (!directionsPayload) {
-        setError("Выберите четыре услуги для блока направлений")
+        setError("Выберите четыре категории для блока направлений")
         setSaving(false)
         return
       }
@@ -307,11 +307,11 @@ export function HomeForm({ initialData, services }: Props) {
         <section className="rounded-2xl border p-4 space-y-4">
           <div>
             <h2 className="text-lg font-semibold">Четыре направления</h2>
-            <p className="text-sm text-muted-foreground">Выберите услуги, которые лучше всего показывают спектр клиники.</p>
+            <p className="text-sm text-muted-foreground">Выберите категории, которые лучше всего показывают спектр клиники.</p>
           </div>
-          {serviceOptions.length === 0 && (
+          {categoryOptions.length === 0 && (
             <div className="text-sm text-muted-foreground">
-              Сначала добавьте услуги в каталоге, чтобы выбрать их здесь.
+              Сначала добавьте категории в каталоге, чтобы выбрать их здесь.
             </div>
           )}
           <div className="grid gap-4 md:grid-cols-2">
@@ -320,13 +320,13 @@ export function HomeForm({ initialData, services }: Props) {
                 <label className="text-sm font-medium">Направление {index + 1}</label>
                 <select
                   className="h-10 rounded-md border px-3"
-                  value={dir.serviceId ?? ""}
+                  value={dir.categoryId ?? ""}
                   onChange={(e) => updateDirection(index, e.target.value ? Number(e.target.value) : null)}
                 >
-                  <option value="">— выберите услугу —</option>
-                  {serviceOptions.map((service) => (
-                    <option key={service.id} value={service.id}>
-                      {service.name}
+                  <option value="">— выберите категорию —</option>
+                  {categoryOptions.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
                     </option>
                   ))}
                 </select>
@@ -384,19 +384,19 @@ function ensureFourDirections(list: any): DirectionState[] {
         .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
         .map((item) => ({
           id: typeof item?.id === "number" ? item.id : null,
-          serviceId:
+          categoryId:
             ensureNumber(
-              typeof item?.serviceId === "number"
-                ? item.serviceId
-                : typeof item?.service?.id === "number"
-                  ? item.service.id
+              typeof item?.categoryId === "number"
+                ? item.categoryId
+                : typeof item?.category?.id === "number"
+                  ? item.category.id
                   : null
             ),
         }))
     : []
 
   while (normalized.length < 4) {
-    normalized.push({ id: null, serviceId: null })
+    normalized.push({ id: null, categoryId: null })
   }
   return normalized.slice(0, 4)
 }
@@ -420,7 +420,7 @@ function buildMediaPayload(list: MediaState[]): MediaPayload[] {
     .filter((item): item is MediaPayload => item !== null)
 }
 
-type DirectionPayload = { serviceId: number; order: number }
+type DirectionPayload = { categoryId: number; order: number }
 
 function findMissingFileIndex(list: MediaState[]): number | null {
   const missingIndex = list.findIndex((item) => !ensureNumber(item.fileId))
@@ -431,9 +431,9 @@ function buildDirectionsPayload(list: DirectionState[]): DirectionPayload[] | nu
   if (list.length === 0) return null
   const payload: DirectionPayload[] = []
   for (let index = 0; index < list.length; index += 1) {
-    const candidate = ensureNumber(list[index]?.serviceId)
+    const candidate = ensureNumber(list[index]?.categoryId)
     if (!candidate) return null
-    payload.push({ serviceId: candidate, order: index + 1 })
+    payload.push({ categoryId: candidate, order: index + 1 })
   }
   return payload
 }

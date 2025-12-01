@@ -13,21 +13,21 @@ async function fetchPage() {
 }
 
 export default async function HomeAdminPage() {
-  const [data, services] = await Promise.all([fetchPage(), fetchServices()])
-  return <HomeForm initialData={data} services={services} />
+  const [data, categories] = await Promise.all([fetchPage(), fetchCategories()])
+  return <HomeForm initialData={data} categories={categories} />
 }
 
-async function fetchServices() {
+async function fetchCategories() {
   try {
-    const res = await serverApi(`/admin/catalog/services`)
+    const res = await serverApi(`/admin/catalog/categories`)
     if (!res.ok) return []
     const payload = unwrapData(await res.json())
     const list = Array.isArray(payload)
       ? payload
       : Array.isArray((payload as any)?.items)
         ? (payload as any).items
-        : Array.isArray((payload as any)?.services)
-          ? (payload as any).services
+        : Array.isArray((payload as any)?.categories)
+          ? (payload as any).categories
           : []
     return list
       .filter((item: any) => typeof item?.id === "number" && typeof item?.name === "string")
