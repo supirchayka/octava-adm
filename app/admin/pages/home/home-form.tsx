@@ -11,7 +11,7 @@ import type { SimpleImageValue } from "@/components/image-field"
 
 interface Props {
   initialData: Record<string, any> | null
-  categories: { id: number; name: string }[]
+  categories: { id: number; name: string; slug?: string }[]
 }
 
 type MediaState = SimpleImageValue & {
