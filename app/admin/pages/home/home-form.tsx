@@ -105,16 +105,28 @@ export function HomeForm({ initialData, services }: Props) {
         images: buildMediaPayload(interiorImages),
       }
       payload.directions = directionsPayload
+      const subheroImagePayload =
+        subheroImage.fileId || subheroImage.id
+          ? {
+              id: subheroImage.id ?? null,
+              fileId: subheroImage.fileId ?? subheroImage.id,
+              file: subheroImage.fileId ? { id: subheroImage.fileId } : subheroImage.id ? { id: subheroImage.id } : undefined,
+            }
+          : null
       payload.subHero = {
         title: content.subheroTitle === "" ? null : content.subheroTitle,
         subtitle: content.subheroSubtitle === "" ? null : content.subheroSubtitle,
-        image: subheroImage.fileId
+        image: subheroImagePayload
           ? {
-              fileId: subheroImage.fileId,
+              ...subheroImagePayload,
               alt: subheroImage.alt.trim() === "" ? null : subheroImage.alt.trim(),
             }
           : null,
       }
+      payload.subheroTitle = payload.subHero.title
+      payload.subheroSubtitle = payload.subHero.subtitle
+      payload.subheroImageFileId = subheroImagePayload?.fileId ?? null
+      payload.subheroImage = subheroImagePayload
       const seoPayload = prepareSeoPayload(seo)
       if (seoPayload) payload.seo = seoPayload
 
