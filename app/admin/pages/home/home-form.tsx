@@ -34,20 +34,24 @@ type HomeContentKeys =
 
 export function HomeForm({ initialData, services }: Props) {
   const normalized = initialData ? unwrapData<Record<string, any>>(initialData) : null
+  const normalizedHero = normalized?.hero ?? {}
+  const normalizedInterior = normalized?.interior ?? {}
   const [content, setContent] = useState<Record<HomeContentKeys, string>>({
-    heroTitle: normalized?.heroTitle ?? "",
-    heroSubtitle: normalized?.heroSubtitle ?? "",
-    heroCtaText: normalized?.heroCtaText ?? "",
-    heroCtaUrl: normalized?.heroCtaUrl ?? "",
+    heroTitle: normalizedHero?.title ?? normalized?.heroTitle ?? "",
+    heroSubtitle: normalizedHero?.subtitle ?? normalized?.heroSubtitle ?? "",
+    heroCtaText: normalizedHero?.ctaText ?? normalized?.heroCtaText ?? "",
+    heroCtaUrl: normalizedHero?.ctaUrl ?? normalized?.heroCtaUrl ?? "",
     subheroTitle: normalized?.subHero?.title ?? normalized?.subheroTitle ?? "",
     subheroSubtitle: normalized?.subHero?.subtitle ?? normalized?.subheroSubtitle ?? "",
-    interiorText: normalized?.interiorText ?? "",
+    interiorText: normalizedInterior?.text ?? normalized?.interiorText ?? "",
   })
   const [heroImages, setHeroImages] = useState<MediaState[]>(() => {
-    const list = normalizeMedia(normalized?.heroImages)
+    const list = normalizeMedia(normalizedHero?.images ?? normalized?.heroImages)
     return list.length ? list : [{ id: null, fileId: null, previewUrl: null, alt: "", caption: "" }]
   })
-  const [interiorImages, setInteriorImages] = useState<MediaState[]>(() => normalizeMedia(normalized?.interiorImages))
+  const [interiorImages, setInteriorImages] = useState<MediaState[]>(() =>
+    normalizeMedia(normalizedInterior?.images ?? normalized?.interiorImages)
+  )
   const [directions, setDirections] = useState<DirectionState[]>(() => ensureFourDirections(normalized?.directions))
   const [subheroImage, setSubheroImage] = useState<SubheroImageState>(() =>
     normalizeSubheroImage(normalized?.subHero?.image ?? normalized?.subheroImage)
@@ -89,22 +93,40 @@ export function HomeForm({ initialData, services }: Props) {
 
     try {
       const payload: Record<string, any> = {}
-      ;(Object.keys(content) as HomeContentKeys[]).forEach((key) => {
-        payload[key] = content[key] === "" ? null : content[key]
-      })
-      payload.heroImages = heroPayload
-      payload.interiorImages = buildMediaPayload(interiorImages)
+      payload.hero = {
+        title: content.heroTitle === "" ? null : content.heroTitle,
+        subtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
+        ctaText: content.heroCtaText === "" ? null : content.heroCtaText,
+        ctaUrl: content.heroCtaUrl === "" ? null : content.heroCtaUrl,
+        images: heroPayload,
+      }
+      payload.interior = {
+        text: content.interiorText === "" ? null : content.interiorText,
+        images: buildMediaPayload(interiorImages),
+      }
       payload.directions = directionsPayload
+      const subheroImagePayload =
+        subheroImage.fileId || subheroImage.id
+          ? {
+              id: subheroImage.id ?? null,
+              fileId: subheroImage.fileId ?? subheroImage.id,
+              file: subheroImage.fileId ? { id: subheroImage.fileId } : subheroImage.id ? { id: subheroImage.id } : undefined,
+            }
+          : null
       payload.subHero = {
         title: content.subheroTitle === "" ? null : content.subheroTitle,
         subtitle: content.subheroSubtitle === "" ? null : content.subheroSubtitle,
-        image: subheroImage.fileId
+        image: subheroImagePayload
           ? {
-              fileId: subheroImage.fileId,
+              ...subheroImagePayload,
               alt: subheroImage.alt.trim() === "" ? null : subheroImage.alt.trim(),
             }
           : null,
       }
+      payload.subheroTitle = payload.subHero.title
+      payload.subheroSubtitle = payload.subHero.subtitle
+      payload.subheroImageFileId = subheroImagePayload?.fileId ?? null
+      payload.subheroImage = subheroImagePayload
       const seoPayload = prepareSeoPayload(seo)
       if (seoPayload) payload.seo = seoPayload
 
@@ -151,6 +173,15 @@ export function HomeForm({ initialData, services }: Props) {
               <label className="text-sm font-medium">Ссылка из кнопки</label>
               <Input type="url" value={content.heroCtaUrl} onChange={(e) => updateContent("heroCtaUrl", e.target.value)} placeholder="https://..." />
             </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border p-4 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold">Поддерживающий блок (subhero)</h2>
+            <p className="text-sm text-muted-foreground">Добавьте второстепенный заголовок, текст и фон для блока под героем.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="grid gap-1 md:col-span-2">
               <label className="text-sm font-medium">Поддерживающий заголовок</label>
               <Input value={content.subheroTitle} onChange={(e) => updateContent("subheroTitle", e.target.value)} placeholder="Почему стоит прийти именно к вам" />
@@ -282,9 +313,11 @@ function normalizeMedia(list: any): MediaState[] {
       fileId: ensureNumber(item?.fileId ?? item?.file?.id),
       previewUrl: item?.file?.path
         ? absoluteUploadUrl(item.file.path)
-        : item?.path
-          ? absoluteUploadUrl(item.path)
-          : null,
+        : item?.url
+          ? absoluteUploadUrl(item.url)
+          : item?.path
+            ? absoluteUploadUrl(item.path)
+            : null,
       alt: item?.alt ?? "",
       caption: item?.caption ?? "",
     }))
