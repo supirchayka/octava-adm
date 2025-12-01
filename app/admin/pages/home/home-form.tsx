@@ -161,6 +161,15 @@ export function HomeForm({ initialData, services }: Props) {
               <label className="text-sm font-medium">Ссылка из кнопки</label>
               <Input type="url" value={content.heroCtaUrl} onChange={(e) => updateContent("heroCtaUrl", e.target.value)} placeholder="https://..." />
             </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border p-4 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold">Поддерживающий блок (subhero)</h2>
+            <p className="text-sm text-muted-foreground">Добавьте второстепенный заголовок, текст и фон для блока под героем.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="grid gap-1 md:col-span-2">
               <label className="text-sm font-medium">Поддерживающий заголовок</label>
               <Input value={content.subheroTitle} onChange={(e) => updateContent("subheroTitle", e.target.value)} placeholder="Почему стоит прийти именно к вам" />
