@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
@@ -58,6 +58,7 @@ export function HomeForm({ initialData, services }: Props) {
   )
   const [seo, setSeo] = useState<SeoState>(() => ((normalized?.seo as SeoState) ?? defaultSeoState))
   const [saving, setSaving] = useState(false)
+  const [autoSaveRequested, setAutoSaveRequested] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -71,78 +72,95 @@ export function HomeForm({ initialData, services }: Props) {
     setDirections((prev) => prev.map((item, idx) => (idx === index ? { ...item, serviceId } : item)))
   }
 
-  async function submit(e: React.FormEvent) {
+  const scheduleAutoSave = useCallback(() => setAutoSaveRequested(true), [])
+
+  const savePage = useCallback(
+    async (mode: "manual" | "auto") => {
+      setSaving(true)
+      if (mode === "manual") {
+        setError(null)
+        setMessage(null)
+      }
+
+      const heroPayload = buildMediaPayload(heroImages)
+      if (!heroPayload.length) {
+        setError("Добавьте хотя бы одну обложку и загрузите для неё изображение")
+        setSaving(false)
+        return
+      }
+
+      const directionsPayload = buildDirectionsPayload(directions)
+      if (!directionsPayload) {
+        setError("Выберите четыре услуги для блока направлений")
+        setSaving(false)
+        return
+      }
+
+      try {
+        const payload: Record<string, any> = {}
+        payload.hero = {
+          title: content.heroTitle === "" ? null : content.heroTitle,
+          subtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
+          ctaText: content.heroCtaText === "" ? null : content.heroCtaText,
+          ctaUrl: content.heroCtaUrl === "" ? null : content.heroCtaUrl,
+          images: heroPayload,
+        }
+        payload.interior = {
+          text: content.interiorText === "" ? null : content.interiorText,
+          images: buildMediaPayload(interiorImages),
+        }
+        payload.directions = directionsPayload
+        const subheroImagePayload =
+          subheroImage.fileId || subheroImage.id
+            ? {
+                id: subheroImage.id ?? null,
+                fileId: subheroImage.fileId ?? subheroImage.id,
+                file: subheroImage.fileId ? { id: subheroImage.fileId } : subheroImage.id ? { id: subheroImage.id } : undefined,
+              }
+            : null
+        payload.subHero = {
+          title: content.subheroTitle === "" ? null : content.subheroTitle,
+          subtitle: content.subheroSubtitle === "" ? null : content.subheroSubtitle,
+          image: subheroImagePayload
+            ? {
+                ...subheroImagePayload,
+                alt: subheroImage.alt.trim() === "" ? null : subheroImage.alt.trim(),
+              }
+            : null,
+        }
+        payload.subheroTitle = payload.subHero.title
+        payload.subheroSubtitle = payload.subHero.subtitle
+        payload.subheroImageFileId = subheroImagePayload?.fileId ?? null
+        payload.subheroImage = subheroImagePayload
+        const seoPayload = prepareSeoPayload(seo)
+        if (seoPayload) payload.seo = seoPayload
+
+        const res = await fetch(`/api/admin/pages/home`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+        if (!res.ok) throw new Error(await res.text())
+        setMessage("Изменения сохранены")
+      } catch (err: any) {
+        setError(err.message || "Не удалось сохранить страницу")
+      } finally {
+        setSaving(false)
+      }
+    },
+    [content, directions, heroImages, interiorImages, seo, subheroImage]
+  )
+
+  function submit(e: React.FormEvent) {
     e.preventDefault()
-    setSaving(true)
-    setError(null)
-    setMessage(null)
-
-    const heroPayload = buildMediaPayload(heroImages)
-    if (!heroPayload.length) {
-      setError("Добавьте хотя бы одну обложку и загрузите для неё изображение")
-      setSaving(false)
-      return
-    }
-
-    const directionsPayload = buildDirectionsPayload(directions)
-    if (!directionsPayload) {
-      setError("Выберите четыре услуги для блока направлений")
-      setSaving(false)
-      return
-    }
-
-    try {
-      const payload: Record<string, any> = {}
-      payload.hero = {
-        title: content.heroTitle === "" ? null : content.heroTitle,
-        subtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
-        ctaText: content.heroCtaText === "" ? null : content.heroCtaText,
-        ctaUrl: content.heroCtaUrl === "" ? null : content.heroCtaUrl,
-        images: heroPayload,
-      }
-      payload.interior = {
-        text: content.interiorText === "" ? null : content.interiorText,
-        images: buildMediaPayload(interiorImages),
-      }
-      payload.directions = directionsPayload
-      const subheroImagePayload =
-        subheroImage.fileId || subheroImage.id
-          ? {
-              id: subheroImage.id ?? null,
-              fileId: subheroImage.fileId ?? subheroImage.id,
-              file: subheroImage.fileId ? { id: subheroImage.fileId } : subheroImage.id ? { id: subheroImage.id } : undefined,
-            }
-          : null
-      payload.subHero = {
-        title: content.subheroTitle === "" ? null : content.subheroTitle,
-        subtitle: content.subheroSubtitle === "" ? null : content.subheroSubtitle,
-        image: subheroImagePayload
-          ? {
-              ...subheroImagePayload,
-              alt: subheroImage.alt.trim() === "" ? null : subheroImage.alt.trim(),
-            }
-          : null,
-      }
-      payload.subheroTitle = payload.subHero.title
-      payload.subheroSubtitle = payload.subHero.subtitle
-      payload.subheroImageFileId = subheroImagePayload?.fileId ?? null
-      payload.subheroImage = subheroImagePayload
-      const seoPayload = prepareSeoPayload(seo)
-      if (seoPayload) payload.seo = seoPayload
-
-      const res = await fetch(`/api/admin/pages/home`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) throw new Error(await res.text())
-      setMessage("Изменения сохранены")
-    } catch (err: any) {
-      setError(err.message || "Не удалось сохранить страницу")
-    } finally {
-      setSaving(false)
-    }
+    void savePage("manual")
   }
+
+  useEffect(() => {
+    if (!autoSaveRequested || saving) return
+    setAutoSaveRequested(false)
+    void savePage("auto")
+  }, [autoSaveRequested, savePage, saving])
 
   return (
     <div className="space-y-6">
@@ -205,14 +223,15 @@ export function HomeForm({ initialData, services }: Props) {
                 )}
                 <div className="flex flex-wrap gap-2">
                   <FileUploader
-                    onUploaded={(uploaded) =>
+                    onUploaded={(uploaded) => {
                       setSubheroImage({
                         id: subheroImage.id ?? null,
                         fileId: uploaded.id,
                         previewUrl: absoluteUploadUrl(uploaded.path),
                         alt: subheroImage.alt,
                       })
-                    }
+                      scheduleAutoSave()
+                    }}
                   />
                   {subheroImage.fileId && (
                     <Button
@@ -245,6 +264,7 @@ export function HomeForm({ initialData, services }: Props) {
           description="Добавьте 1–3 ярких кадра. Первый в списке станет обложкой."
           items={heroImages}
           onChange={setHeroImages}
+          onUploaded={scheduleAutoSave}
           allowRemove={heroImages.length > 1}
         />
 
@@ -257,7 +277,13 @@ export function HomeForm({ initialData, services }: Props) {
             <label className="text-sm font-medium">Небольшой рассказ об атмосфере</label>
             <Textarea value={content.interiorText} onChange={(e) => updateContent("interiorText", e.target.value)} placeholder="Несколько тёплых предложений" />
           </div>
-          <MediaSection title="Фотографии интерьера" description="Добавьте столько кадров, сколько нужно. Их порядок сохранится." items={interiorImages} onChange={setInteriorImages} />
+          <MediaSection
+            title="Фотографии интерьера"
+            description="Добавьте столько кадров, сколько нужно. Их порядок сохранится."
+            items={interiorImages}
+            onChange={setInteriorImages}
+            onUploaded={scheduleAutoSave}
+          />
         </section>
 
         <section className="rounded-2xl border p-4 space-y-4">
@@ -404,9 +430,10 @@ interface MediaSectionProps {
   items: MediaState[]
   onChange: (items: MediaState[]) => void
   allowRemove?: boolean
+  onUploaded?: () => void
 }
 
-function MediaSection({ title, description, items, onChange, allowRemove = true }: MediaSectionProps) {
+function MediaSection({ title, description, items, onChange, allowRemove = true, onUploaded }: MediaSectionProps) {
   return (
     <section className="rounded-2xl border p-4 space-y-4">
       <div>
@@ -437,7 +464,7 @@ function MediaSection({ title, description, items, onChange, allowRemove = true 
               <div className="text-sm text-muted-foreground">Пока нет изображения</div>
             )}
             <FileUploader
-              onUploaded={(uploaded) =>
+              onUploaded={(uploaded) => {
                 onChange(
                   items.map((img, idx) =>
                     idx === index
@@ -445,7 +472,8 @@ function MediaSection({ title, description, items, onChange, allowRemove = true 
                       : img
                   )
                 )
-              }
+                onUploaded?.()
+              }}
             />
             <div className="grid gap-2 md:grid-cols-2">
               <div className="grid gap-1">
