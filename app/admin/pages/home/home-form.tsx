@@ -383,7 +383,7 @@ function ensureFourDirections(list: any): DirectionState[] {
   return normalized.slice(0, 4)
 }
 
-type MediaPayload = { fileId: number; alt: string | null; caption: string | null; order: number }
+type MediaPayload = { fileId: number; alt?: string; caption?: string; order: number }
 
 function buildMediaPayload(list: MediaState[]): MediaPayload[] {
   return list
@@ -394,8 +394,8 @@ function buildMediaPayload(list: MediaState[]): MediaPayload[] {
       const caption = item.caption?.trim() ?? ""
       return {
         fileId,
-        alt: alt === "" ? null : alt,
-        caption: caption === "" ? null : caption,
+        alt: alt === "" ? undefined : alt,
+        caption: caption === "" ? undefined : caption,
         order: index + 1,
       }
     })
