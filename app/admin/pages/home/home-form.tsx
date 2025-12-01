@@ -89,6 +89,13 @@ export function HomeForm({ initialData, categories }: Props) {
         return
       }
 
+      const ctaUrl = content.heroCtaUrl.trim()
+      if (ctaUrl !== "" && !isValidRelativeOrAbsoluteUrl(ctaUrl)) {
+        setError("Укажите корректную ссылку в поле кнопки героя")
+        setSaving(false)
+        return
+      }
+
       const directionsPayload = buildDirectionsPayload(directions)
       if (!directionsPayload) {
         setError("Выберите четыре категории для блока направлений")
@@ -104,12 +111,18 @@ export function HomeForm({ initialData, categories }: Props) {
           return
         }
 
-        const payload: Record<string, any> = {}
+        const payload: Record<string, any> = {
+          heroTitle: content.heroTitle === "" ? null : content.heroTitle,
+          heroSubtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
+          heroCtaText: content.heroCtaText === "" ? null : content.heroCtaText,
+          heroCtaUrl: ctaUrl === "" ? null : ctaUrl,
+          heroImages: heroPayload,
+        }
         payload.hero = {
-          title: content.heroTitle === "" ? null : content.heroTitle,
-          subtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
-          ctaText: content.heroCtaText === "" ? null : content.heroCtaText,
-          ctaUrl: content.heroCtaUrl === "" ? null : content.heroCtaUrl,
+          title: payload.heroTitle,
+          subtitle: payload.heroSubtitle,
+          ctaText: payload.heroCtaText,
+          ctaUrl: payload.heroCtaUrl,
           images: heroPayload,
         }
         const interiorMissingIndex = findMissingFileIndex(interiorImages)
@@ -146,7 +159,12 @@ export function HomeForm({ initialData, categories }: Props) {
         payload.subheroImageFileId = subheroImagePayload?.fileId ?? null
         payload.subheroImage = subheroImagePayload
         const seoPayload = prepareSeoPayload(seo)
-        if (seoPayload) payload.seo = seoPayload
+        if (seoPayload) {
+          if (heroPayload[0]?.fileId) {
+            seoPayload.ogImageId = heroPayload[0].fileId
+          }
+          payload.seo = seoPayload
+        }
 
         const res = await fetch(`/api/admin/pages/home`, {
           method: "PUT",
@@ -435,6 +453,17 @@ function buildDirectionsPayload(list: DirectionState[]): DirectionPayload[] | nu
     payload.push({ categoryId: candidate, order: index + 1 })
   }
   return payload
+}
+
+function isValidRelativeOrAbsoluteUrl(value: string): boolean {
+  try {
+    // new URL supports both absolute and relative values with a base provided
+    // eslint-disable-next-line no-new
+    new URL(value, "https://example.com")
+    return true
+  } catch (err) {
+    return false
+  }
 }
 
 function ensureNumber(value: unknown): number | null {
