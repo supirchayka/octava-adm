@@ -119,10 +119,9 @@ export function HomeForm({ initialData, categories }: Props) {
           return
         }
 
-        payload.interior = {
-          text: content.interiorText === "" ? null : content.interiorText,
-          images: buildMediaPayload(interiorImages),
-        }
+        const interiorPayload = buildMediaPayload(interiorImages)
+        payload.interiorText = content.interiorText === "" ? null : content.interiorText
+        payload.interiorImages = interiorPayload
         payload.directions = directionsPayload
         const subheroImagePayload =
           subheroImage.fileId || subheroImage.id
@@ -414,7 +413,7 @@ function buildMediaPayload(list: MediaState[]): MediaPayload[] {
         fileId,
         alt: alt === "" ? undefined : alt,
         caption: caption === "" ? undefined : caption,
-        order: index + 1,
+        order: index,
       }
     })
     .filter((item): item is MediaPayload => item !== null)
