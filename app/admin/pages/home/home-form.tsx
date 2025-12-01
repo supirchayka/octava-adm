@@ -97,6 +97,13 @@ export function HomeForm({ initialData, services }: Props) {
       }
 
       try {
+        const heroMissingIndex = findMissingFileIndex(heroImages)
+        if (heroMissingIndex !== null) {
+          setError(`Загрузите изображение для кадра ${heroMissingIndex + 1} в блоке героя`)
+          setSaving(false)
+          return
+        }
+
         const payload: Record<string, any> = {}
         payload.hero = {
           title: content.heroTitle === "" ? null : content.heroTitle,
@@ -105,6 +112,13 @@ export function HomeForm({ initialData, services }: Props) {
           ctaUrl: content.heroCtaUrl === "" ? null : content.heroCtaUrl,
           images: heroPayload,
         }
+        const interiorMissingIndex = findMissingFileIndex(interiorImages)
+        if (interiorMissingIndex !== null) {
+          setError(`Загрузите изображение для кадра ${interiorMissingIndex + 1} в блоке интерьера`)
+          setSaving(false)
+          return
+        }
+
         payload.interior = {
           text: content.interiorText === "" ? null : content.interiorText,
           images: buildMediaPayload(interiorImages),
@@ -266,6 +280,8 @@ export function HomeForm({ initialData, services }: Props) {
           onChange={setHeroImages}
           onUploaded={scheduleAutoSave}
           allowRemove={heroImages.length > 1}
+          requireFileId
+          orderHint="Порядок сохраняется при сохранении — используйте стрелки, чтобы задать нужную последовательность."
         />
 
         <section className="rounded-2xl border p-4 space-y-4">
@@ -283,6 +299,8 @@ export function HomeForm({ initialData, services }: Props) {
             items={interiorImages}
             onChange={setInteriorImages}
             onUploaded={scheduleAutoSave}
+            requireFileId
+            orderHint="Если нужно зафиксировать сортировку, расставьте кадры стрелками — порядок уйдёт в API целиком."
           />
         </section>
 
@@ -404,6 +422,11 @@ function buildMediaPayload(list: MediaState[]): MediaPayload[] {
 
 type DirectionPayload = { serviceId: number; order: number }
 
+function findMissingFileIndex(list: MediaState[]): number | null {
+  const missingIndex = list.findIndex((item) => !ensureNumber(item.fileId))
+  return missingIndex === -1 ? null : missingIndex
+}
+
 function buildDirectionsPayload(list: DirectionState[]): DirectionPayload[] | null {
   if (list.length === 0) return null
   const payload: DirectionPayload[] = []
@@ -431,14 +454,26 @@ interface MediaSectionProps {
   onChange: (items: MediaState[]) => void
   allowRemove?: boolean
   onUploaded?: () => void
+  requireFileId?: boolean
+  orderHint?: string
 }
 
-function MediaSection({ title, description, items, onChange, allowRemove = true, onUploaded }: MediaSectionProps) {
+function MediaSection({
+  title,
+  description,
+  items,
+  onChange,
+  allowRemove = true,
+  onUploaded,
+  requireFileId = false,
+  orderHint,
+}: MediaSectionProps) {
   return (
     <section className="rounded-2xl border p-4 space-y-4">
       <div>
         <h2 className="text-lg font-semibold">{title}</h2>
         <p className="text-sm text-muted-foreground">{description}</p>
+        {orderHint && <p className="text-xs text-muted-foreground">{orderHint}</p>}
       </div>
       <div className="space-y-4">
         {items.length === 0 && <div className="text-sm text-muted-foreground">Пока нет фотографий — добавьте первый кадр.</div>}
@@ -475,6 +510,9 @@ function MediaSection({ title, description, items, onChange, allowRemove = true,
                 onUploaded?.()
               }}
             />
+            {!item.fileId && requireFileId && (
+              <div className="text-sm text-amber-600">Загрузите файл, чтобы сохранить этот кадр и его порядок.</div>
+            )}
             <div className="grid gap-2 md:grid-cols-2">
               <div className="grid gap-1">
                 <label className="text-sm font-medium">Подпись (необязательно)</label>
