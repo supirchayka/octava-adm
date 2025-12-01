@@ -21,7 +21,8 @@ async function fetchCategories() {
   try {
     const res = await serverApi(`/admin/catalog/categories`)
     if (!res.ok) return []
-    const payload = unwrapData(await res.json())
+    const raw = await res.json()
+    const payload = Array.isArray(raw) ? raw : unwrapData(raw)
     const list = Array.isArray(payload)
       ? payload
       : Array.isArray((payload as any)?.items)
@@ -31,7 +32,11 @@ async function fetchCategories() {
           : []
     return list
       .filter((item: any) => typeof item?.id === "number" && typeof item?.name === "string")
-      .map((item: any) => ({ id: item.id, name: item.name }))
+      .map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        slug: typeof item?.slug === "string" ? item.slug : undefined,
+      }))
   } catch {
     return []
   }
