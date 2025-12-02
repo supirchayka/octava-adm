@@ -29,7 +29,7 @@ export const defaultSeoState: SeoState = {
 export function prepareSeoPayload(seo?: SeoState) {
   if (!seo) return undefined
   const payload: Record<string, string | number | boolean | null | undefined> = {}
-  const textKeys: Array<keyof SeoState> = [
+  const textKeys: Array<"metaTitle" | "metaDescription" | "canonicalUrl" | "ogTitle" | "ogDescription"> = [
     "metaTitle",
     "metaDescription",
     "canonicalUrl",
