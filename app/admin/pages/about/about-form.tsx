@@ -35,10 +35,12 @@ export function AboutForm({ initialData }: Props) {
   const [heroImage, setHeroImage] = useState<SimpleImageValue>(() => {
     const file = normalized?.heroImage as HeroImagePayload | undefined
     const previewPath = file?.path ?? file?.file?.path ?? null
-    const fileId = normalized?.heroImageFileId ?? file?.fileId ?? file?.id ?? null
+    const rawFileId = normalized?.heroImageFileId ?? file?.fileId ?? file?.id ?? null
+    const fileId = typeof rawFileId === "number" ? rawFileId : null
+    const imageId = typeof file?.id === "number" ? file.id : null
     return {
-      id: file?.id ?? null,
-      fileId: fileId ?? null,
+      id: imageId,
+      fileId,
       previewUrl: previewPath ? absoluteUploadUrl(previewPath) : null,
     }
   })
