@@ -146,20 +146,6 @@ export function HomeForm({ initialData, categories }: Props) {
           return
         }
 
-        const payload: HomePayload = {
-          heroTitle: content.heroTitle === "" ? null : content.heroTitle,
-          heroSubtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
-          heroCtaText: content.heroCtaText === "" ? null : content.heroCtaText,
-          heroCtaUrl: ctaUrl === "" ? null : ctaUrl,
-          heroImages: heroPayload,
-        }
-        payload.hero = {
-          title: payload.heroTitle,
-          subtitle: payload.heroSubtitle,
-          ctaText: payload.heroCtaText,
-          ctaUrl: payload.heroCtaUrl,
-          images: heroPayload,
-        }
         const interiorMissingIndex = findMissingFileIndex(interiorImages)
         if (interiorMissingIndex !== null) {
           setError(`Загрузите изображение для кадра ${interiorMissingIndex + 1} в блоке интерьера`)
@@ -168,9 +154,6 @@ export function HomeForm({ initialData, categories }: Props) {
         }
 
         const interiorPayload = buildMediaPayload(interiorImages)
-        payload.interiorText = content.interiorText === "" ? null : content.interiorText
-        payload.interiorImages = interiorPayload
-        payload.directions = directionsPayload
         const subheroImagePayload: MediaIdentifier | null =
           subheroImage.fileId || subheroImage.id
             ? {
@@ -189,12 +172,30 @@ export function HomeForm({ initialData, categories }: Props) {
               }
             : null,
         }
-        payload.subHero = subHeroPayload
-        payload.subheroTitle = subHeroPayload.title
-        payload.subheroSubtitle = subHeroPayload.subtitle
-        payload.subheroImageFileId = subheroImagePayload?.fileId ?? null
-        payload.subheroImage = subheroImagePayload
         const seoPayload = prepareSeoPayload(seo)
+        const payload: HomePayload = {
+          heroTitle: content.heroTitle === "" ? null : content.heroTitle,
+          heroSubtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
+          heroCtaText: content.heroCtaText === "" ? null : content.heroCtaText,
+          heroCtaUrl: ctaUrl === "" ? null : ctaUrl,
+          heroImages: heroPayload,
+          hero: {
+            title: content.heroTitle === "" ? null : content.heroTitle,
+            subtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
+            ctaText: content.heroCtaText === "" ? null : content.heroCtaText,
+            ctaUrl: ctaUrl === "" ? null : ctaUrl,
+            images: heroPayload,
+          },
+          interiorText: content.interiorText === "" ? null : content.interiorText,
+          interiorImages: interiorPayload,
+          directions: directionsPayload,
+          subHero: subHeroPayload,
+          subheroTitle: subHeroPayload.title,
+          subheroSubtitle: subHeroPayload.subtitle,
+          subheroImageFileId: subheroImagePayload?.fileId ?? null,
+          subheroImage: subheroImagePayload,
+          ...(seoPayload ? { seo: seoPayload } : {}),
+        }
         if (seoPayload) {
           if (heroPayload[0]?.fileId) {
             seoPayload.ogImageId = heroPayload[0].fileId
