@@ -24,6 +24,34 @@ type SubheroImageState = SimpleImageValue & { alt: string }
 
 type DirectionState = { id?: number | null; categoryId: number | null }
 
+type MediaIdentifier = { id: number | null; fileId: number | null; file?: { id: number } }
+
+type SubHeroPayload = { title: string | null; subtitle: string | null; image: (MediaIdentifier & { alt: string | null }) | null }
+
+type HomePayload = {
+  heroTitle: string | null
+  heroSubtitle: string | null
+  heroCtaText: string | null
+  heroCtaUrl: string | null
+  heroImages: MediaPayload[]
+  hero: {
+    title: string | null
+    subtitle: string | null
+    ctaText: string | null
+    ctaUrl: string | null
+    images: MediaPayload[]
+  }
+  interiorText: string | null
+  interiorImages: MediaPayload[]
+  directions: DirectionPayload[]
+  subHero: SubHeroPayload
+  subheroTitle: string | null
+  subheroSubtitle: string | null
+  subheroImageFileId: number | null
+  subheroImage: MediaIdentifier | null
+  seo?: ReturnType<typeof prepareSeoPayload>
+}
+
 type HomeContentKeys =
   | "heroTitle"
   | "heroSubtitle"
@@ -118,7 +146,7 @@ export function HomeForm({ initialData, categories }: Props) {
           return
         }
 
-        const payload: Record<string, unknown> = {
+        const payload: HomePayload = {
           heroTitle: content.heroTitle === "" ? null : content.heroTitle,
           heroSubtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
           heroCtaText: content.heroCtaText === "" ? null : content.heroCtaText,
@@ -143,7 +171,7 @@ export function HomeForm({ initialData, categories }: Props) {
         payload.interiorText = content.interiorText === "" ? null : content.interiorText
         payload.interiorImages = interiorPayload
         payload.directions = directionsPayload
-        const subheroImagePayload =
+        const subheroImagePayload: MediaIdentifier | null =
           subheroImage.fileId || subheroImage.id
             ? {
                 id: subheroImage.id ?? null,
@@ -151,7 +179,7 @@ export function HomeForm({ initialData, categories }: Props) {
                 file: subheroImage.fileId ? { id: subheroImage.fileId } : subheroImage.id ? { id: subheroImage.id } : undefined,
               }
             : null
-        payload.subHero = {
+        const subHeroPayload: SubHeroPayload = {
           title: content.subheroTitle === "" ? null : content.subheroTitle,
           subtitle: content.subheroSubtitle === "" ? null : content.subheroSubtitle,
           image: subheroImagePayload
@@ -161,8 +189,9 @@ export function HomeForm({ initialData, categories }: Props) {
               }
             : null,
         }
-        payload.subheroTitle = payload.subHero.title
-        payload.subheroSubtitle = payload.subHero.subtitle
+        payload.subHero = subHeroPayload
+        payload.subheroTitle = subHeroPayload.title
+        payload.subheroSubtitle = subHeroPayload.subtitle
         payload.subheroImageFileId = subheroImagePayload?.fileId ?? null
         payload.subheroImage = subheroImagePayload
         const seoPayload = prepareSeoPayload(seo)
