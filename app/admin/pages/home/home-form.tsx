@@ -10,7 +10,7 @@ import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
 import type { SimpleImageValue } from "@/components/image-field"
 
 interface Props {
-  initialData: Record<string, any> | null
+  initialData: Record<string, unknown> | null
   categories: { id: number; name: string; slug?: string }[]
 }
 
@@ -33,7 +33,7 @@ type HomeContentKeys =
   | "interiorText"
 
 export function HomeForm({ initialData, categories }: Props) {
-  const normalized = initialData ? unwrapData<Record<string, any>>(initialData) : null
+  const normalized = initialData ? unwrapData<Record<string, unknown>>(initialData) : null
   const normalizedHero = normalized?.hero ?? {}
   const normalizedInterior = normalized?.interior ?? {}
   const [content, setContent] = useState<Record<HomeContentKeys, string>>({
@@ -111,7 +111,7 @@ export function HomeForm({ initialData, categories }: Props) {
           return
         }
 
-        const payload: Record<string, any> = {
+        const payload: Record<string, unknown> = {
           heroTitle: content.heroTitle === "" ? null : content.heroTitle,
           heroSubtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
           heroCtaText: content.heroCtaText === "" ? null : content.heroCtaText,
