@@ -15,8 +15,8 @@ interface CategoryDetail {
   description: string | null
   sortOrder?: number | null
   heroImageFileId?: number | null
-  heroImage?: { fileId: number | null } | null
-  images?: Array<{ purpose: "HERO" | "GALLERY"; file?: { id: number } }>
+  heroImage?: { fileId: number | null; path?: string; file?: { id?: number; path?: string } } | null
+  images?: Array<{ purpose: "HERO" | "GALLERY"; file?: { id: number; path?: string } }>
   seo?: SeoState
 }
 
@@ -48,7 +48,7 @@ export function EditCategoryDialog({
       .then((payload: CategoryDetail) => {
         const json = unwrapData<CategoryDetail>(payload)
         const heroFromImages = json.images?.find((img) => img.purpose === "HERO")
-        const heroPath = heroFromImages?.file?.path ?? (json.heroImage as any)?.file?.path ?? (json.heroImage as any)?.path ?? null
+        const heroPath = heroFromImages?.file?.path ?? json.heroImage?.file?.path ?? json.heroImage?.path ?? null
         const heroFileId = json.heroImageFileId ?? json.heroImage?.fileId ?? heroFromImages?.file?.id ?? null
         setName(json.name)
         setDescription(json.description ?? "")
@@ -60,7 +60,10 @@ export function EditCategoryDialog({
         })
         setSeo(json.seo ?? defaultSeoState)
       })
-      .catch((e: any) => setError(e.message || "Не удалось загрузить"))
+      .catch((e: unknown) => {
+        const message = e instanceof Error ? e.message : "Не удалось загрузить"
+        setError(message)
+      })
       .finally(() => setLoading(false))
   }, [open, categoryId])
 
@@ -81,8 +84,9 @@ export function EditCategoryDialog({
       })
       if (!res.ok) throw new Error(await res.text())
       window.location.reload()
-    } catch (e: any) {
-      setError(e.message || "Ошибка сохранения")
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Ошибка сохранения"
+      setError(message)
     } finally {
       setSaving(false)
     }

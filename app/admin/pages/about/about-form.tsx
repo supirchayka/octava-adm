@@ -10,15 +10,16 @@ import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
 import type { SimpleImageValue } from "@/components/image-field"
 
 interface Props {
-  initialData: Record<string, any> | null
+  initialData: Record<string, unknown> | null
 }
 
 type FactState = { title: string; text: string }
+type HeroImagePayload = { id?: number | null; fileId?: number | null; path?: string | null; file?: { path?: string | null } }
 
 type AboutContentKeys = "heroTitle" | "heroDescription" | "howWeAchieveText" | "heroCtaTitle" | "heroCtaSubtitle"
 
 export function AboutForm({ initialData }: Props) {
-  const normalized = initialData ? unwrapData<Record<string, any>>(initialData) : null
+  const normalized = initialData ? unwrapData<Record<string, unknown>>(initialData) : null
   const [content, setContent] = useState<Record<AboutContentKeys, string>>({
     heroTitle: normalized?.heroTitle ?? "",
     heroDescription: normalized?.heroDescription ?? "",
@@ -27,7 +28,7 @@ export function AboutForm({ initialData }: Props) {
     heroCtaSubtitle: normalized?.heroCtaSubtitle ?? "",
   })
   const [heroImage, setHeroImage] = useState<SimpleImageValue>(() => {
-    const file = normalized?.heroImage as any
+    const file = normalized?.heroImage as HeroImagePayload | undefined
     const previewPath = file?.path ?? file?.file?.path ?? null
     const fileId = normalized?.heroImageFileId ?? file?.fileId ?? file?.id ?? null
     return {
@@ -83,7 +84,7 @@ export function AboutForm({ initialData }: Props) {
     }
 
     try {
-      const payload: Record<string, any> = {
+      const payload: Record<string, unknown> = {
         heroImageFileId: heroImage.fileId,
         facts: facts.map((fact, index) => ({
           title: fact.title || null,
@@ -104,8 +105,9 @@ export function AboutForm({ initialData }: Props) {
       })
       if (!res.ok) throw new Error(await res.text())
       setMessage("Страница обновлена")
-    } catch (err: any) {
-      setError(err.message || "Не удалось сохранить страницу")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Не удалось сохранить страницу"
+      setError(message)
     } finally {
       setSaving(false)
     }
@@ -215,7 +217,7 @@ export function AboutForm({ initialData }: Props) {
   )
 }
 
-function normalizeFacts(list: any): FactState[] {
+function normalizeFacts(list: unknown): FactState[] {
   if (!Array.isArray(list) || list.length === 0) {
     return [{ title: "", text: "" }]
   }
