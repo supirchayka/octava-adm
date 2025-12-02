@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,7 +11,7 @@ import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
 import type { SimpleImageValue } from "@/components/image-field"
 
 interface Props {
-  initialData: Record<string, any> | null
+  initialData: Record<string, unknown> | null
   categories: { id: number; name: string; slug?: string }[]
 }
 
@@ -33,7 +34,7 @@ type HomeContentKeys =
   | "interiorText"
 
 export function HomeForm({ initialData, categories }: Props) {
-  const normalized = initialData ? unwrapData<Record<string, any>>(initialData) : null
+  const normalized = initialData ? unwrapData<Record<string, unknown>>(initialData) : null
   const normalizedHero = normalized?.hero ?? {}
   const normalizedInterior = normalized?.interior ?? {}
   const [content, setContent] = useState<Record<HomeContentKeys, string>>({
@@ -111,7 +112,7 @@ export function HomeForm({ initialData, categories }: Props) {
           return
         }
 
-        const payload: Record<string, any> = {
+        const payload: Record<string, unknown> = {
           heroTitle: content.heroTitle === "" ? null : content.heroTitle,
           heroSubtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
           heroCtaText: content.heroCtaText === "" ? null : content.heroCtaText,
@@ -173,8 +174,9 @@ export function HomeForm({ initialData, categories }: Props) {
         })
         if (!res.ok) throw new Error(await res.text())
         setMessage("Изменения сохранены")
-      } catch (err: any) {
-        setError(err.message || "Не удалось сохранить страницу")
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Не удалось сохранить страницу"
+        setError(message)
       } finally {
         setSaving(false)
       }
@@ -246,7 +248,14 @@ export function HomeForm({ initialData, categories }: Props) {
               </div>
               <div className="space-y-3 rounded-2xl border p-4">
                 {subheroImage.previewUrl ? (
-                  <img src={subheroImage.previewUrl} alt="Фон subhero" className="h-48 w-full rounded-lg object-cover" />
+                  <Image
+                    src={subheroImage.previewUrl}
+                    alt="Фон subhero"
+                    width={1200}
+                    height={320}
+                    unoptimized
+                    className="h-48 w-full rounded-lg object-cover"
+                  />
                 ) : (
                   <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
                     Пока нет изображения
@@ -365,7 +374,7 @@ export function HomeForm({ initialData, categories }: Props) {
   )
 }
 
-function normalizeMedia(list: any): MediaState[] {
+function normalizeMedia(list: unknown): MediaState[] {
   if (!Array.isArray(list)) return []
   return [...list]
     .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
@@ -379,23 +388,24 @@ function normalizeMedia(list: any): MediaState[] {
           : item?.path
             ? absoluteUploadUrl(item.path)
             : null,
-      alt: item?.alt ?? "",
-      caption: item?.caption ?? "",
+      alt: typeof item?.alt === "string" ? item.alt : "",
+      caption: typeof item?.caption === "string" ? item.caption : "",
     }))
 }
 
-function normalizeSubheroImage(value: any): SubheroImageState {
-  const fileId = ensureNumber(value?.fileId ?? value?.id ?? value?.file?.id)
-  const previewPath = value?.path ?? value?.url ?? value?.file?.path ?? null
+function normalizeSubheroImage(value: unknown): SubheroImageState {
+  const candidate = value as { fileId?: unknown; id?: unknown; file?: { id?: unknown; path?: string | null }; path?: string | null; url?: string | null; alt?: string | null }
+  const fileId = ensureNumber(candidate?.fileId ?? candidate?.id ?? candidate?.file?.id)
+  const previewPath = candidate?.path ?? candidate?.url ?? candidate?.file?.path ?? null
   return {
-    id: ensureNumber(value?.id),
+    id: ensureNumber(candidate?.id),
     fileId: fileId ?? null,
     previewUrl: previewPath ? absoluteUploadUrl(previewPath) : null,
-    alt: value?.alt ?? "",
+    alt: candidate?.alt ?? "",
   }
 }
 
-function ensureFourDirections(list: any): DirectionState[] {
+function ensureFourDirections(list: unknown): DirectionState[] {
   const normalized: DirectionState[] = Array.isArray(list)
     ? [...list]
         .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
@@ -461,7 +471,7 @@ function isValidRelativeOrAbsoluteUrl(value: string): boolean {
     // eslint-disable-next-line no-new
     new URL(value, "https://example.com")
     return true
-  } catch (err) {
+  } catch {
     return false
   }
 }
@@ -522,7 +532,14 @@ function MediaSection({
               </div>
             </div>
             {item.previewUrl ? (
-              <img src={item.previewUrl} alt="Предпросмотр" className="h-48 w-full rounded-lg object-cover" />
+              <Image
+                src={item.previewUrl}
+                alt="Предпросмотр"
+                width={800}
+                height={320}
+                unoptimized
+                className="h-48 w-full rounded-lg object-cover"
+              />
             ) : (
               <div className="text-sm text-muted-foreground">Пока нет изображения</div>
             )}
