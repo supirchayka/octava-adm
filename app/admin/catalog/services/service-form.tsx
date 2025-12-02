@@ -201,9 +201,9 @@ export function ServiceFormDialog({
           devicesSource
             .map((d) => {
               if (typeof d === "number") return d
-              if (d?.deviceId) return d.deviceId
-              if (d?.device?.id) return d.device.id
-              if (d?.id && typeof d.id === "number") return d.id
+              if ("deviceId" in d && d.deviceId) return d.deviceId
+              if ("device" in d && d.device?.id) return d.device.id
+              if ("id" in d && typeof d.id === "number") return d.id
               return null
             })
             .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
