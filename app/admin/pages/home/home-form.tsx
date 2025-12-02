@@ -154,12 +154,14 @@ export function HomeForm({ initialData, categories }: Props) {
         }
 
         const interiorPayload = buildMediaPayload(interiorImages)
+        const subheroFileId = ensureNumber(subheroImage.fileId ?? subheroImage.id)
+        const subheroId = ensureNumber(subheroImage.id)
         const subheroImagePayload: MediaIdentifier | null =
-          subheroImage.fileId || subheroImage.id
+          subheroFileId !== null || subheroId !== null
             ? {
-                id: subheroImage.id ?? null,
-                fileId: subheroImage.fileId ?? subheroImage.id,
-                file: subheroImage.fileId ? { id: subheroImage.fileId } : subheroImage.id ? { id: subheroImage.id } : undefined,
+                id: subheroId,
+                fileId: subheroFileId,
+                file: subheroFileId !== null ? { id: subheroFileId } : subheroId !== null ? { id: subheroId } : undefined,
               }
             : null
         const subHeroPayload: SubHeroPayload = {
