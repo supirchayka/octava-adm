@@ -32,13 +32,17 @@ const hourLabels: Record<WorkingHourGroup, string> = {
 
 export function ContactsForm({ initialData }: Props) {
   const normalized = initialData ? unwrapData<Record<string, unknown>>(initialData) : null
+  const getContactValue = (key: ContactKeys) => {
+    const value = normalized?.[key]
+    return typeof value === "string" ? value : ""
+  }
   const [contacts, setContacts] = useState<Record<ContactKeys, string>>({
-    phoneMain: normalized?.phoneMain ?? "",
-    email: normalized?.email ?? "",
-    telegramUrl: normalized?.telegramUrl ?? "",
-    whatsappUrl: normalized?.whatsappUrl ?? "",
-    addressText: normalized?.addressText ?? "",
-    yandexMapUrl: normalized?.yandexMapUrl ?? "",
+    phoneMain: getContactValue("phoneMain"),
+    email: getContactValue("email"),
+    telegramUrl: getContactValue("telegramUrl"),
+    whatsappUrl: getContactValue("whatsappUrl"),
+    addressText: getContactValue("addressText"),
+    yandexMapUrl: getContactValue("yandexMapUrl"),
   })
   const [workingHours, setWorkingHours] = useState<WorkingHourState[]>(() => normalizeWorkingHours(normalized?.workingHours))
   const [metroStations, setMetroStations] = useState<MetroStationState[]>(() => normalizeStations(normalized?.metroStations))
