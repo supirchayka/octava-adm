@@ -15,8 +15,11 @@ async function refreshTokens(oldRefresh: string | undefined) {
   const c = await cookies()
   const accessExp = 60 * 15 // 15 минут
   const refreshExp = 60 * 60 * 24 * 30 // 30 дней
-  c.set(ACCESS_COOKIE, data.accessToken, { httpOnly: true, sameSite: "lax", secure: true, path: "/", maxAge: accessExp })
-  c.set(REFRESH_COOKIE, data.refreshToken, { httpOnly: true, sameSite: "lax", secure: true, path: "/", maxAge: refreshExp })
+  c.set(ACCESS_COOKIE, data.accessToken, { httpOnly: true, sameSite: "lax", path: "/", maxAge: accessExp })
+  c.set(REFRESH_COOKIE, data.refreshToken, { httpOnly: true, sameSite: "lax", path: "/", maxAge: refreshExp })
+
+  //c.set(ACCESS_COOKIE, data.accessToken, { httpOnly: true, sameSite: "lax", secure: true, path: "/", maxAge: accessExp })
+  //c.set(REFRESH_COOKIE, data.refreshToken, { httpOnly: true, sameSite: "lax", secure: true, path: "/", maxAge: refreshExp })
   return true
 }
 
