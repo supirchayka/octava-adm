@@ -251,11 +251,13 @@ function normalizeWorkingHours(list: unknown): WorkingHourState[] {
       | { isClosed?: unknown; open?: unknown; close?: unknown }
       | undefined
     if (!found) return entry
+    const open = typeof found.open === "string" ? found.open : ""
+    const close = typeof found.close === "string" ? found.close : ""
     return {
       group: entry.group,
       isClosed: Boolean(found?.isClosed),
-      open: found?.open ?? "",
-      close: found?.close ?? "",
+      open,
+      close,
     }
   })
 }
