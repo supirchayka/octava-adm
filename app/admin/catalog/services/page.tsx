@@ -29,8 +29,8 @@ export default function ServicesPage() {
         if (!res.ok) throw new Error(await res.text())
         return res.json()
       })
-      .then((j: any) => {
-        const list = Array.isArray(j) ? j : j.items || []
+      .then((payload: unknown) => {
+        const list = parseList<Category>(payload)
         setCats(list)
       })
       .catch(() => setCats([]))
@@ -38,13 +38,17 @@ export default function ServicesPage() {
 
   useEffect(() => {
     fetch(`/api/admin/catalog/devices`)
-      .then(async res => {
+      .then(async (res) => {
         if (!res.ok) throw new Error(await res.text())
         return res.json()
       })
-      .then((j: any) => {
-        const list = Array.isArray(j) ? j : j.items || []
-        setDevices(list.map((d: any) => ({ id: d.id, label: `${d.brand} ${d.model}`.trim() })))
+      .then((payload: unknown) => {
+        const list = parseList<DeviceOption & { brand?: string; model?: string }>(payload)
+        setDevices(
+          list
+            .filter((d) => typeof d.id === "number" && (d as { brand?: string }).brand !== undefined)
+            .map((d) => ({ id: d.id, label: `${(d as { brand?: string }).brand ?? ""} ${(d as { model?: string }).model ?? ""}`.trim() }))
+        )
       })
       .catch(() => setDevices([]))
   }, [])
@@ -60,12 +64,13 @@ export default function ServicesPage() {
     try {
       const res = await fetch(`/api/admin/catalog/services?categoryId=${categoryId}`)
       if (!res.ok) throw new Error(await res.text())
-      const j = await res.json()
-      const list = Array.isArray(j) ? j : j.items || j.services || []
+      const payload = await res.json()
+      const list = parseList<Service>(payload, ["items", "services"])
       setServices(list)
-    } catch (e: any) {
+    } catch (e: unknown) {
       setServices([])
-      setServicesError(e.message || "Не удалось загрузить услуги")
+      const message = e instanceof Error ? e.message : "Не удалось загрузить услуги"
+      setServicesError(message)
     }
   }
 
@@ -147,4 +152,15 @@ export default function ServicesPage() {
       )}
     </div>
   )
+}
+
+function parseList<T>(payload: unknown, keys: string[] = ["items"]): T[] {
+  if (Array.isArray(payload)) return payload as T[]
+  if (payload && typeof payload === "object") {
+    for (const key of keys) {
+      const maybeList = (payload as Record<string, unknown>)[key]
+      if (Array.isArray(maybeList)) return maybeList as T[]
+    }
+  }
+  return []
 }
