@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -150,7 +151,14 @@ export function AboutForm({ initialData }: Props) {
           <div className="space-y-2">
             <label className="text-sm font-medium">Обложка</label>
             {heroImage.previewUrl ? (
-              <img src={heroImage.previewUrl} alt="Hero" className="h-48 w-full rounded-lg object-cover" />
+              <Image
+                src={heroImage.previewUrl}
+                alt="Hero"
+                width={1200}
+                height={360}
+                unoptimized
+                className="h-48 w-full rounded-lg object-cover"
+              />
             ) : (
               <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
                 Добавьте фото, которое лучше всего отражает атмосферу.

@@ -31,8 +31,9 @@ export default function OrgPage() {
         if (!res.ok) throw new Error(await res.text())
         const data = await res.json()
         setOrg(unwrapData<Org>(data) || {})
-      } catch (e: any) {
-        setError(e.message || "Не удалось получить данные организации")
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : "Не удалось получить данные организации"
+        setError(message)
       } finally {
         setLoading(false)
       }
@@ -72,8 +73,9 @@ export default function OrgPage() {
       const data = await res.json().catch(() => null)
       if (data) setOrg(unwrapData<Org>(data) || payload)
       setMsg("Сохранено")
-    } catch (e: any) {
-      setError(e.message || "Ошибка сохранения")
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Ошибка сохранения"
+      setError(message)
     } finally {
       setSaving(false)
     }
