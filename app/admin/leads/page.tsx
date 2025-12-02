@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 
 type Lead = {
@@ -34,7 +34,7 @@ export default function LeadsPage() {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
 
-  async function load(p = 1) {
+  const load = useCallback(async (p = 1) => {
     setLoading(true)
     const params = new URLSearchParams()
     params.set("page", String(p))
@@ -45,9 +45,9 @@ export default function LeadsPage() {
     const j: LeadsResponse = await res.json()
     setItems(j.items); setTotal(j.total); setPage(j.page)
     setLoading(false)
-  }
+  }, [q, status])
 
-  useEffect(() => { load(1) }, [])
+  useEffect(() => { load(1) }, [load])
 
   async function setStatusFor(id: number, next: Lead["status"]) {
     await fetch(`/api/admin/leads/${id}/status`, {
