@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { FileUploader } from "@/components/file-uploader"
 import { absoluteUploadUrl } from "@/lib/utils"
@@ -64,7 +65,14 @@ export function ImageListField({ title, description, items, onChange, emptyHint 
             </div>
           </div>
           {item.previewUrl ? (
-            <img src={item.previewUrl} alt="Выбранное изображение" className="h-48 w-full rounded-lg object-cover" />
+            <Image
+              src={item.previewUrl}
+              alt="Выбранное изображение"
+              width={800}
+              height={320}
+              unoptimized
+              className="h-48 w-full rounded-lg object-cover"
+            />
           ) : (
             <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
               Пока не выбрано изображение

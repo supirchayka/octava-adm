@@ -60,7 +60,7 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
       .then((payload: DeviceDetailResponse) => {
         const data = unwrapData<DeviceDetailResponse>(payload)
         const heroFromImages = data.images?.find((img) => img.purpose === "HERO")
-        const heroPath = heroFromImages?.file?.path ?? (data.heroImage as any)?.file?.path ?? (data.heroImage as any)?.path ?? null
+        const heroPath = heroFromImages?.file?.path ?? data.heroImage?.file?.path ?? null
         const heroFileId = data.heroImageFileId ?? data.heroImage?.fileId ?? heroFromImages?.file?.id ?? null
         const galleryFromImages = (data.images ?? [])
           .filter((img) => img.purpose === "GALLERY")
@@ -93,7 +93,10 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
         }
         setSeo(data.seo ?? defaultSeoState)
       })
-      .catch((e: any) => setError(e.message || "Не удалось загрузить данные"))
+      .catch((e: unknown) => {
+        const message = e instanceof Error ? e.message : "Не удалось загрузить данные"
+        setError(message)
+      })
       .finally(() => setLoading(false))
   }, [open, deviceId])
 
@@ -116,7 +119,7 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
         .map((item) => item.fileId)
         .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
 
-      const payload: Record<string, any> = {
+      const payload = {
         brand: form.brand,
         model: form.model,
         positioning: form.positioning,
@@ -138,8 +141,9 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
       onCompleted()
       setOpen(false)
       resetState()
-    } catch (e: any) {
-      setError(e.message || "Ошибка сохранения")
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Ошибка сохранения"
+      setError(message)
     } finally {
       setSaving(false)
     }

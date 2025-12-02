@@ -29,7 +29,7 @@ type ServiceDetail = {
   ctaUrl?: string | null
   sortOrder?: number | null
   heroImageFileId?: number | null
-  heroImage?: { fileId?: number | null; file?: { path?: string | null } } | null
+  heroImage?: { fileId?: number | null; file?: { path?: string | null }; path?: string | null } | null
   galleryImageFileIds?: number[] | null
   images?: Array<{ purpose: "HERO" | "GALLERY"; order: number; file?: { id: number; path?: string | null } }>
   devices?: Array<{ deviceId?: number | null; device?: { id: number } }>
@@ -65,6 +65,34 @@ type PriceRow = {
   sessionsCount: string
   order: string
   isActive: boolean
+}
+
+type ServicePricePayload = {
+  title: string
+  price: number
+  durationMinutes?: number
+  type?: string
+  sessionsCount?: number
+  order?: number
+  isActive?: boolean
+}
+
+type ServicePayload = {
+  categoryId: number
+  name: string
+  shortOffer: string | null
+  priceFrom: number | null
+  durationMinutes: number | null
+  benefit1: string | null
+  benefit2: string | null
+  ctaText: string | null
+  ctaUrl: string | null
+  sortOrder: number | null
+  heroImageFileId: number | null
+  galleryImageFileIds: number[]
+  usedDeviceIds: number[]
+  servicePricesExtended: ServicePricePayload[]
+  seo?: ReturnType<typeof prepareSeoPayload>
 }
 
 interface Props {
@@ -127,7 +155,7 @@ export function ServiceFormDialog({
       .then((payload: ServiceDetail) => {
         const data = unwrapData<ServiceDetail>(payload)
         const heroFromImages = data.images?.find((img) => img.purpose === "HERO")
-        const heroPath = heroFromImages?.file?.path ?? (data.heroImage as any)?.file?.path ?? (data.heroImage as any)?.path ?? null
+        const heroPath = heroFromImages?.file?.path ?? data.heroImage?.file?.path ?? data.heroImage?.path ?? null
         const heroFileId = data.heroImageFileId ?? data.heroImage?.fileId ?? heroFromImages?.file?.id ?? null
         const galleryFromImages = (data.images ?? [])
           .filter((img) => img.purpose === "GALLERY")
@@ -173,9 +201,9 @@ export function ServiceFormDialog({
           devicesSource
             .map((d) => {
               if (typeof d === "number") return d
-              if (d?.deviceId) return d.deviceId
-              if (d?.device?.id) return d.device.id
-              if (d?.id && typeof d.id === "number") return d.id
+              if ("deviceId" in d && d.deviceId) return d.deviceId
+              if ("device" in d && d.device?.id) return d.device.id
+              if ("id" in d && typeof d.id === "number") return d.id
               return null
             })
             .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
@@ -193,7 +221,10 @@ export function ServiceFormDialog({
         )
         setSeo(data.seo ?? defaultSeoState)
       })
-      .catch((e: any) => setError(e.message || "Не удалось загрузить услугу"))
+      .catch((e: unknown) => {
+        const message = e instanceof Error ? e.message : "Не удалось загрузить услугу"
+        setError(message)
+      })
       .finally(() => setLoading(false))
   }, [open, serviceId])
 
@@ -249,7 +280,7 @@ export function ServiceFormDialog({
         .map((item) => item.fileId)
         .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
 
-      const payload: Record<string, any> = {
+      const payload: ServicePayload = {
         categoryId: Number(form.categoryId),
         name: form.name,
         shortOffer: form.shortOffer || null,
@@ -288,8 +319,9 @@ export function ServiceFormDialog({
       onCompleted()
       setOpen(false)
       resetState()
-    } catch (e: any) {
-      setError(e.message || "Ошибка сохранения")
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Ошибка сохранения"
+      setError(message)
     } finally {
       setSaving(false)
     }

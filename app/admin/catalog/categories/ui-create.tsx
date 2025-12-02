@@ -34,8 +34,9 @@ export default function CreateCategoryForm() {
       if (!res.ok) throw new Error(await res.text())
       // reload page data
       location.reload()
-    } catch (e: any) {
-      setError(e.message || "Ошибка сохранения")
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Ошибка сохранения"
+      setError(message)
     } finally {
       setSaving(false)
     }
