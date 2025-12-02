@@ -21,12 +21,16 @@ type AboutContentKeys = "heroTitle" | "heroDescription" | "howWeAchieveText" | "
 
 export function AboutForm({ initialData }: Props) {
   const normalized = initialData ? unwrapData<Record<string, unknown>>(initialData) : null
+  const getContentValue = (key: AboutContentKeys) => {
+    const value = normalized?.[key]
+    return typeof value === "string" ? value : ""
+  }
   const [content, setContent] = useState<Record<AboutContentKeys, string>>({
-    heroTitle: normalized?.heroTitle ?? "",
-    heroDescription: normalized?.heroDescription ?? "",
-    howWeAchieveText: normalized?.howWeAchieveText ?? "",
-    heroCtaTitle: normalized?.heroCtaTitle ?? "",
-    heroCtaSubtitle: normalized?.heroCtaSubtitle ?? "",
+    heroTitle: getContentValue("heroTitle"),
+    heroDescription: getContentValue("heroDescription"),
+    howWeAchieveText: getContentValue("howWeAchieveText"),
+    heroCtaTitle: getContentValue("heroCtaTitle"),
+    heroCtaSubtitle: getContentValue("heroCtaSubtitle"),
   })
   const [heroImage, setHeroImage] = useState<SimpleImageValue>(() => {
     const file = normalized?.heroImage as HeroImagePayload | undefined
