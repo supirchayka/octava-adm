@@ -18,17 +18,19 @@ interface Props {
   title: string
   description: string
   fields: PageField[]
-  initialData: Record<string, any> | null
+  initialData: Record<string, unknown> | null
 }
 
 export function PageForm({ page, title, description, fields, initialData }: Props) {
-  const normalized = initialData ? unwrapData<Record<string, any>>(initialData) : null
-  const initialSeo = ((normalized as any)?.seo ?? defaultSeoState) as SeoState
+  const normalized = initialData ? unwrapData<Record<string, unknown>>(initialData) : null
+  const normalizedSeo = (normalized as { seo?: unknown } | null)?.seo
+  const initialSeo = (normalizedSeo as SeoState) ?? defaultSeoState
 
   const [form, setForm] = useState(() => {
     const values: Record<string, string> = {}
     fields.forEach((field) => {
-      values[field.key] = (normalized as any)?.[field.key] ?? ""
+      const fieldValue = normalized ? (normalized as Record<string, unknown>)[field.key] : undefined
+      values[field.key] = typeof fieldValue === "string" ? fieldValue : ""
     })
     return values
   })
@@ -47,7 +49,7 @@ export function PageForm({ page, title, description, fields, initialData }: Prop
     setError(null)
     setMessage(null)
     try {
-      const payload: Record<string, any> = {}
+      const payload: Record<string, unknown> = {}
       fields.forEach((field) => {
         const value = form[field.key]
         payload[field.key] = value === "" ? null : value
@@ -61,8 +63,9 @@ export function PageForm({ page, title, description, fields, initialData }: Prop
       })
       if (!res.ok) throw new Error(await res.text())
       setMessage("Сохранено")
-    } catch (e: any) {
-      setError(e.message || "Ошибка сохранения")
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Ошибка сохранения"
+      setError(message)
     } finally {
       setSaving(false)
     }

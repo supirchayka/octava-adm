@@ -27,8 +27,9 @@ export default function LoginPage() {
       }
       const next = sp.get("next") || "/admin"
       router.replace(next)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Ошибка входа"
+      setError(message)
     } finally {
       setLoading(false)
     }
