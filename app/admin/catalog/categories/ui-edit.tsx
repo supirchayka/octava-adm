@@ -15,8 +15,8 @@ interface CategoryDetail {
   description: string | null
   sortOrder?: number | null
   heroImageFileId?: number | null
-  heroImage?: { fileId: number | null } | null
-  images?: Array<{ purpose: "HERO" | "GALLERY"; file?: { id: number } }>
+  heroImage?: { fileId: number | null; path?: string; file?: { id?: number; path?: string } } | null
+  images?: Array<{ purpose: "HERO" | "GALLERY"; file?: { id: number; path?: string } }>
   seo?: SeoState
 }
 
