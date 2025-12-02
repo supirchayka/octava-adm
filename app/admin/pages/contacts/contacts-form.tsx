@@ -8,7 +8,7 @@ import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/
 import { unwrapData } from "@/lib/utils"
 
 interface Props {
-  initialData: Record<string, any> | null
+  initialData: Record<string, unknown> | null
 }
 
 type ContactKeys = "phoneMain" | "email" | "telegramUrl" | "whatsappUrl" | "addressText" | "yandexMapUrl"
@@ -31,14 +31,18 @@ const hourLabels: Record<WorkingHourGroup, string> = {
 }
 
 export function ContactsForm({ initialData }: Props) {
-  const normalized = initialData ? unwrapData<Record<string, any>>(initialData) : null
+  const normalized = initialData ? unwrapData<Record<string, unknown>>(initialData) : null
+  const getContactValue = (key: ContactKeys) => {
+    const value = normalized?.[key]
+    return typeof value === "string" ? value : ""
+  }
   const [contacts, setContacts] = useState<Record<ContactKeys, string>>({
-    phoneMain: normalized?.phoneMain ?? "",
-    email: normalized?.email ?? "",
-    telegramUrl: normalized?.telegramUrl ?? "",
-    whatsappUrl: normalized?.whatsappUrl ?? "",
-    addressText: normalized?.addressText ?? "",
-    yandexMapUrl: normalized?.yandexMapUrl ?? "",
+    phoneMain: getContactValue("phoneMain"),
+    email: getContactValue("email"),
+    telegramUrl: getContactValue("telegramUrl"),
+    whatsappUrl: getContactValue("whatsappUrl"),
+    addressText: getContactValue("addressText"),
+    yandexMapUrl: getContactValue("yandexMapUrl"),
   })
   const [workingHours, setWorkingHours] = useState<WorkingHourState[]>(() => normalizeWorkingHours(normalized?.workingHours))
   const [metroStations, setMetroStations] = useState<MetroStationState[]>(() => normalizeStations(normalized?.metroStations))
@@ -81,7 +85,7 @@ export function ContactsForm({ initialData }: Props) {
     }
 
     try {
-      const payload: Record<string, any> = {}
+      const payload: Record<string, unknown> = {}
       ;(Object.keys(contacts) as ContactKeys[]).forEach((key) => {
         payload[key] = contacts[key] === "" ? null : contacts[key]
       })
@@ -108,8 +112,9 @@ export function ContactsForm({ initialData }: Props) {
       })
       if (!res.ok) throw new Error(await res.text())
       setMessage("Контакты обновлены")
-    } catch (err: any) {
-      setError(err.message || "Не удалось сохранить страницу")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Не удалось сохранить страницу"
+      setError(message)
     } finally {
       setSaving(false)
     }
@@ -234,7 +239,7 @@ export function ContactsForm({ initialData }: Props) {
   )
 }
 
-function normalizeWorkingHours(list: any): WorkingHourState[] {
+function normalizeWorkingHours(list: unknown): WorkingHourState[] {
   const entries: WorkingHourState[] = [
     { group: "WEEKDAYS", open: "", close: "", isClosed: false },
     { group: "SATURDAY", open: "", close: "", isClosed: false },
@@ -242,24 +247,39 @@ function normalizeWorkingHours(list: any): WorkingHourState[] {
   ]
   if (!Array.isArray(list)) return entries
   return entries.map((entry) => {
-    const found = list.find((item: any) => item?.group === entry.group)
+    const found = list.find((item) => typeof item === "object" && item !== null && (item as { group?: unknown }).group === entry.group) as
+      | { isClosed?: unknown; open?: unknown; close?: unknown }
+      | undefined
     if (!found) return entry
+    const open = typeof found.open === "string" ? found.open : ""
+    const close = typeof found.close === "string" ? found.close : ""
     return {
       group: entry.group,
       isClosed: Boolean(found?.isClosed),
-      open: found?.open ?? "",
-      close: found?.close ?? "",
+      open,
+      close,
     }
   })
 }
 
-function normalizeStations(list: any): MetroStationState[] {
+function normalizeStations(list: unknown): MetroStationState[] {
   if (!Array.isArray(list) || list.length === 0) {
     return [{ name: "", line: "", distanceMeters: "" }]
   }
-  return list.map((item: any) => ({
-    name: item?.name ?? "",
-    line: item?.line ?? "",
-    distanceMeters: typeof item?.distanceMeters === "number" ? String(item.distanceMeters) : item?.distanceMeters ?? "",
-  }))
+  return list.map((item) => {
+    if (typeof item !== "object" || item === null) {
+      return { name: "", line: "", distanceMeters: "" }
+    }
+    const station = item as { name?: unknown; line?: unknown; distanceMeters?: unknown }
+    return {
+      name: typeof station.name === "string" ? station.name : "",
+      line: typeof station.line === "string" ? station.line : "",
+      distanceMeters:
+        typeof station.distanceMeters === "number"
+          ? String(station.distanceMeters)
+          : typeof station.distanceMeters === "string"
+            ? station.distanceMeters
+            : "",
+    }
+  })
 }

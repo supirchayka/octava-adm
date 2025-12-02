@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { FileUploader } from "@/components/file-uploader"
 import { absoluteUploadUrl } from "@/lib/utils"
@@ -25,7 +26,14 @@ export function ImageField({ label, description, value, onChange }: Props) {
         {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
       {value.previewUrl ? (
-        <img src={value.previewUrl} alt="Выбранное изображение" className="h-48 w-full rounded-lg object-cover" />
+        <Image
+          src={value.previewUrl}
+          alt="Выбранное изображение"
+          width={800}
+          height={320}
+          unoptimized
+          className="h-48 w-full rounded-lg object-cover"
+        />
       ) : (
         <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
           Пока не выбрано изображение

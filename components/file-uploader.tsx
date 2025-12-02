@@ -1,8 +1,8 @@
 "use client"
 
+import Image from "next/image"
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { absoluteUploadUrl } from "@/lib/utils"
 
 type UploadedFile = {
   id: number
@@ -46,8 +46,9 @@ export function FileUploader({ onUploaded }: { onUploaded: (f: UploadedFile) => 
       setFile(null)
       setPreview(null)
       if (inputRef.current) inputRef.current.value = ""
-    } catch (e: any) {
-      setError(e.message || "Ошибка загрузки")
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error)
+      setError(message || "Ошибка загрузки")
     } finally {
       setLoading(false)
     }
@@ -61,7 +62,16 @@ export function FileUploader({ onUploaded }: { onUploaded: (f: UploadedFile) => 
           {file.name} {(file.size / 1024).toFixed(0)} КБ
         </div>
       )}
-      {preview && <img src={preview} alt="preview" className="max-h-40 rounded-lg border object-contain" />}
+      {preview && (
+        <Image
+          src={preview}
+          alt="preview"
+          width={320}
+          height={160}
+          unoptimized
+          className="max-h-40 w-auto rounded-lg border object-contain"
+        />
+      )}
       {error && <div className="text-sm text-red-600">{error}</div>}
       <Button type="button" onClick={upload} disabled={!file || loading}>
         {loading ? "Загружаю..." : "Отправить файл"}
