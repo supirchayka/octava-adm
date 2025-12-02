@@ -18,7 +18,7 @@ export function absoluteUploadUrl(path: string) {
   return path
 }
 
-export function unwrapData<T = any>(payload: unknown): T {
+export function unwrapData<T>(payload: unknown): T {
   if (!payload || typeof payload !== "object") return payload as T
 
   let current: Record<string, unknown> = { ...(payload as Record<string, unknown>) }
@@ -26,14 +26,14 @@ export function unwrapData<T = any>(payload: unknown): T {
   while ("data" in current) {
     const data = current.data
     if (!data || typeof data !== "object" || Array.isArray(data)) break
-    const { data: _, ...rest } = current
+    const { data, ...rest } = current
     current = { ...rest, ...(data as Record<string, unknown>) }
   }
 
   if ("content" in current) {
     const content = current.content
     if (content && typeof content === "object" && !Array.isArray(content)) {
-      const { content: _, ...rest } = current
+      const { content, ...rest } = current
       current = { ...rest, ...(content as Record<string, unknown>) }
     }
   }
