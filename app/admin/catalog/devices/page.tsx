@@ -22,10 +22,16 @@ export default function DevicesPage() {
     try {
       const res = await fetch(`/api/admin/catalog/devices`)
       if (!res.ok) throw new Error(await res.text())
-      const data = await res.json()
-      setDevices(Array.isArray(data) ? data : data.items || [])
-    } catch (e: any) {
-      setError(e.message || "Не удалось загрузить аппараты")
+      const data = await res.json().catch(() => null)
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+          ? data.items
+          : []
+      setDevices(list)
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Не удалось загрузить аппараты"
+      setError(message)
     } finally {
       setLoading(false)
     }
