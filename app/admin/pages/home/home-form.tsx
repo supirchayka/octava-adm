@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,7 +11,7 @@ import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
 import type { SimpleImageValue } from "@/components/image-field"
 
 interface Props {
-  initialData: Record<string, any> | null
+  initialData: Record<string, unknown> | null
   categories: { id: number; name: string; slug?: string }[]
 }
 
@@ -23,6 +24,34 @@ type SubheroImageState = SimpleImageValue & { alt: string }
 
 type DirectionState = { id?: number | null; categoryId: number | null }
 
+type MediaIdentifier = { id: number | null; fileId: number | null; file?: { id: number } }
+
+type SubHeroPayload = { title: string | null; subtitle: string | null; image: (MediaIdentifier & { alt: string | null }) | null }
+
+type HomePayload = {
+  heroTitle: string | null
+  heroSubtitle: string | null
+  heroCtaText: string | null
+  heroCtaUrl: string | null
+  heroImages: MediaPayload[]
+  hero: {
+    title: string | null
+    subtitle: string | null
+    ctaText: string | null
+    ctaUrl: string | null
+    images: MediaPayload[]
+  }
+  interiorText: string | null
+  interiorImages: MediaPayload[]
+  directions: DirectionPayload[]
+  subHero: SubHeroPayload
+  subheroTitle: string | null
+  subheroSubtitle: string | null
+  subheroImageFileId: number | null
+  subheroImage: MediaIdentifier | null
+  seo?: ReturnType<typeof prepareSeoPayload>
+}
+
 type HomeContentKeys =
   | "heroTitle"
   | "heroSubtitle"
@@ -33,28 +62,34 @@ type HomeContentKeys =
   | "interiorText"
 
 export function HomeForm({ initialData, categories }: Props) {
-  const normalized = initialData ? unwrapData<Record<string, any>>(initialData) : null
-  const normalizedHero = normalized?.hero ?? {}
-  const normalizedInterior = normalized?.interior ?? {}
+  const normalized = initialData ? unwrapData<Record<string, unknown>>(initialData) : null
+  const normalizedRecord = typeof normalized === "object" && normalized !== null ? normalized : null
+  const normalizedHero = getRecord(normalizedRecord, "hero")
+  const normalizedInterior = getRecord(normalizedRecord, "interior")
   const [content, setContent] = useState<Record<HomeContentKeys, string>>({
-    heroTitle: normalizedHero?.title ?? normalized?.heroTitle ?? "",
-    heroSubtitle: normalizedHero?.subtitle ?? normalized?.heroSubtitle ?? "",
-    heroCtaText: normalizedHero?.ctaText ?? normalized?.heroCtaText ?? "",
-    heroCtaUrl: normalizedHero?.ctaUrl ?? normalized?.heroCtaUrl ?? "",
-    subheroTitle: normalized?.subHero?.title ?? normalized?.subheroTitle ?? "",
-    subheroSubtitle: normalized?.subHero?.subtitle ?? normalized?.subheroSubtitle ?? "",
-    interiorText: normalizedInterior?.text ?? normalized?.interiorText ?? "",
+    heroTitle: getString(normalizedHero, "title", getString(normalizedRecord, "heroTitle")),
+    heroSubtitle: getString(normalizedHero, "subtitle", getString(normalizedRecord, "heroSubtitle")),
+    heroCtaText: getString(normalizedHero, "ctaText", getString(normalizedRecord, "heroCtaText")),
+    heroCtaUrl: getString(normalizedHero, "ctaUrl", getString(normalizedRecord, "heroCtaUrl")),
+    subheroTitle: getString(getRecord(normalizedRecord, "subHero"), "title", getString(normalizedRecord, "subheroTitle")),
+    subheroSubtitle: getString(
+      getRecord(normalizedRecord, "subHero"),
+      "subtitle",
+      getString(normalizedRecord, "subheroSubtitle"),
+    ),
+    interiorText: getString(normalizedInterior, "text", getString(normalizedRecord, "interiorText")),
   })
   const [heroImages, setHeroImages] = useState<MediaState[]>(() => {
-    const list = normalizeMedia(normalizedHero?.images ?? normalized?.heroImages)
+    const heroImagesSource = getArray(normalizedHero, "images") ?? getArray(normalizedRecord, "heroImages")
+    const list = normalizeMedia(heroImagesSource)
     return list.length ? list : [{ id: null, fileId: null, previewUrl: null, alt: "", caption: "" }]
   })
   const [interiorImages, setInteriorImages] = useState<MediaState[]>(() =>
-    normalizeMedia(normalizedInterior?.images ?? normalized?.interiorImages)
+    normalizeMedia(getArray(normalizedInterior, "images") ?? getArray(normalizedRecord, "interiorImages"))
   )
   const [directions, setDirections] = useState<DirectionState[]>(() => ensureFourDirections(normalized?.directions))
   const [subheroImage, setSubheroImage] = useState<SubheroImageState>(() =>
-    normalizeSubheroImage(normalized?.subHero?.image ?? normalized?.subheroImage)
+    normalizeSubheroImage(getRecord(normalizedRecord, "subHero")?.image ?? getValue(normalizedRecord, "subheroImage"))
   )
   const [seo, setSeo] = useState<SeoState>(() => ((normalized?.seo as SeoState) ?? defaultSeoState))
   const [saving, setSaving] = useState(false)
@@ -111,20 +146,6 @@ export function HomeForm({ initialData, categories }: Props) {
           return
         }
 
-        const payload: Record<string, any> = {
-          heroTitle: content.heroTitle === "" ? null : content.heroTitle,
-          heroSubtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
-          heroCtaText: content.heroCtaText === "" ? null : content.heroCtaText,
-          heroCtaUrl: ctaUrl === "" ? null : ctaUrl,
-          heroImages: heroPayload,
-        }
-        payload.hero = {
-          title: payload.heroTitle,
-          subtitle: payload.heroSubtitle,
-          ctaText: payload.heroCtaText,
-          ctaUrl: payload.heroCtaUrl,
-          images: heroPayload,
-        }
         const interiorMissingIndex = findMissingFileIndex(interiorImages)
         if (interiorMissingIndex !== null) {
           setError(`Загрузите изображение для кадра ${interiorMissingIndex + 1} в блоке интерьера`)
@@ -133,10 +154,7 @@ export function HomeForm({ initialData, categories }: Props) {
         }
 
         const interiorPayload = buildMediaPayload(interiorImages)
-        payload.interiorText = content.interiorText === "" ? null : content.interiorText
-        payload.interiorImages = interiorPayload
-        payload.directions = directionsPayload
-        const subheroImagePayload =
+        const subheroImagePayload: MediaIdentifier | null =
           subheroImage.fileId || subheroImage.id
             ? {
                 id: subheroImage.id ?? null,
@@ -144,7 +162,7 @@ export function HomeForm({ initialData, categories }: Props) {
                 file: subheroImage.fileId ? { id: subheroImage.fileId } : subheroImage.id ? { id: subheroImage.id } : undefined,
               }
             : null
-        payload.subHero = {
+        const subHeroPayload: SubHeroPayload = {
           title: content.subheroTitle === "" ? null : content.subheroTitle,
           subtitle: content.subheroSubtitle === "" ? null : content.subheroSubtitle,
           image: subheroImagePayload
@@ -154,11 +172,30 @@ export function HomeForm({ initialData, categories }: Props) {
               }
             : null,
         }
-        payload.subheroTitle = payload.subHero.title
-        payload.subheroSubtitle = payload.subHero.subtitle
-        payload.subheroImageFileId = subheroImagePayload?.fileId ?? null
-        payload.subheroImage = subheroImagePayload
         const seoPayload = prepareSeoPayload(seo)
+        const payload: HomePayload = {
+          heroTitle: content.heroTitle === "" ? null : content.heroTitle,
+          heroSubtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
+          heroCtaText: content.heroCtaText === "" ? null : content.heroCtaText,
+          heroCtaUrl: ctaUrl === "" ? null : ctaUrl,
+          heroImages: heroPayload,
+          hero: {
+            title: content.heroTitle === "" ? null : content.heroTitle,
+            subtitle: content.heroSubtitle === "" ? null : content.heroSubtitle,
+            ctaText: content.heroCtaText === "" ? null : content.heroCtaText,
+            ctaUrl: ctaUrl === "" ? null : ctaUrl,
+            images: heroPayload,
+          },
+          interiorText: content.interiorText === "" ? null : content.interiorText,
+          interiorImages: interiorPayload,
+          directions: directionsPayload,
+          subHero: subHeroPayload,
+          subheroTitle: subHeroPayload.title,
+          subheroSubtitle: subHeroPayload.subtitle,
+          subheroImageFileId: subheroImagePayload?.fileId ?? null,
+          subheroImage: subheroImagePayload,
+          ...(seoPayload ? { seo: seoPayload } : {}),
+        }
         if (seoPayload) {
           if (heroPayload[0]?.fileId) {
             seoPayload.ogImageId = heroPayload[0].fileId
@@ -173,8 +210,9 @@ export function HomeForm({ initialData, categories }: Props) {
         })
         if (!res.ok) throw new Error(await res.text())
         setMessage("Изменения сохранены")
-      } catch (err: any) {
-        setError(err.message || "Не удалось сохранить страницу")
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Не удалось сохранить страницу"
+        setError(message)
       } finally {
         setSaving(false)
       }
@@ -246,7 +284,14 @@ export function HomeForm({ initialData, categories }: Props) {
               </div>
               <div className="space-y-3 rounded-2xl border p-4">
                 {subheroImage.previewUrl ? (
-                  <img src={subheroImage.previewUrl} alt="Фон subhero" className="h-48 w-full rounded-lg object-cover" />
+                  <Image
+                    src={subheroImage.previewUrl}
+                    alt="Фон subhero"
+                    width={1200}
+                    height={320}
+                    unoptimized
+                    className="h-48 w-full rounded-lg object-cover"
+                  />
                 ) : (
                   <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
                     Пока нет изображения
@@ -365,7 +410,7 @@ export function HomeForm({ initialData, categories }: Props) {
   )
 }
 
-function normalizeMedia(list: any): MediaState[] {
+function normalizeMedia(list: unknown): MediaState[] {
   if (!Array.isArray(list)) return []
   return [...list]
     .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
@@ -379,23 +424,24 @@ function normalizeMedia(list: any): MediaState[] {
           : item?.path
             ? absoluteUploadUrl(item.path)
             : null,
-      alt: item?.alt ?? "",
-      caption: item?.caption ?? "",
+      alt: typeof item?.alt === "string" ? item.alt : "",
+      caption: typeof item?.caption === "string" ? item.caption : "",
     }))
 }
 
-function normalizeSubheroImage(value: any): SubheroImageState {
-  const fileId = ensureNumber(value?.fileId ?? value?.id ?? value?.file?.id)
-  const previewPath = value?.path ?? value?.url ?? value?.file?.path ?? null
+function normalizeSubheroImage(value: unknown): SubheroImageState {
+  const candidate = value as { fileId?: unknown; id?: unknown; file?: { id?: unknown; path?: string | null }; path?: string | null; url?: string | null; alt?: string | null }
+  const fileId = ensureNumber(candidate?.fileId ?? candidate?.id ?? candidate?.file?.id)
+  const previewPath = candidate?.path ?? candidate?.url ?? candidate?.file?.path ?? null
   return {
-    id: ensureNumber(value?.id),
+    id: ensureNumber(candidate?.id),
     fileId: fileId ?? null,
     previewUrl: previewPath ? absoluteUploadUrl(previewPath) : null,
-    alt: value?.alt ?? "",
+    alt: candidate?.alt ?? "",
   }
 }
 
-function ensureFourDirections(list: any): DirectionState[] {
+function ensureFourDirections(list: unknown): DirectionState[] {
   const normalized: DirectionState[] = Array.isArray(list)
     ? [...list]
         .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
@@ -444,6 +490,26 @@ function findMissingFileIndex(list: MediaState[]): number | null {
   return missingIndex === -1 ? null : missingIndex
 }
 
+function getRecord(record: Record<string, unknown> | null, key: string): Record<string, unknown> | null {
+  const value = getValue(record, key)
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null
+}
+
+function getArray(record: Record<string, unknown> | null, key: string): unknown[] | undefined {
+  const value = getValue(record, key)
+  return Array.isArray(value) ? value : undefined
+}
+
+function getString(record: Record<string, unknown> | null, key: string, fallback = ""): string {
+  const value = getValue(record, key)
+  return typeof value === "string" ? value : fallback
+}
+
+function getValue(record: Record<string, unknown> | null, key: string): unknown {
+  if (!record) return undefined
+  return record[key]
+}
+
 function buildDirectionsPayload(list: DirectionState[]): DirectionPayload[] | null {
   if (list.length === 0) return null
   const payload: DirectionPayload[] = []
@@ -461,7 +527,7 @@ function isValidRelativeOrAbsoluteUrl(value: string): boolean {
     // eslint-disable-next-line no-new
     new URL(value, "https://example.com")
     return true
-  } catch (err) {
+  } catch {
     return false
   }
 }
@@ -522,7 +588,14 @@ function MediaSection({
               </div>
             </div>
             {item.previewUrl ? (
-              <img src={item.previewUrl} alt="Предпросмотр" className="h-48 w-full rounded-lg object-cover" />
+              <Image
+                src={item.previewUrl}
+                alt="Предпросмотр"
+                width={800}
+                height={320}
+                unoptimized
+                className="h-48 w-full rounded-lg object-cover"
+              />
             ) : (
               <div className="text-sm text-muted-foreground">Пока нет изображения</div>
             )}

@@ -2,6 +2,8 @@ import { serverApi } from "@/lib/server-fetch"
 import { unwrapData } from "@/lib/utils"
 import { HomeForm } from "./home-form"
 
+type Category = { id: number; name: string; slug?: string }
+
 async function fetchPage() {
   try {
     const res = await serverApi(`/admin/pages/home`)
@@ -25,17 +27,17 @@ async function fetchCategories() {
     const payload = Array.isArray(raw) ? raw : unwrapData(raw)
     const list = Array.isArray(payload)
       ? payload
-      : Array.isArray((payload as any)?.items)
-        ? (payload as any).items
-        : Array.isArray((payload as any)?.categories)
-          ? (payload as any).categories
+      : Array.isArray((payload as { items?: unknown[]; categories?: unknown[] })?.items)
+        ? (payload as { items: unknown[] }).items
+        : Array.isArray((payload as { items?: unknown[]; categories?: unknown[] })?.categories)
+          ? (payload as { categories: unknown[] }).categories
           : []
     return list
-      .filter((item: any) => typeof item?.id === "number" && typeof item?.name === "string")
-      .map((item: any) => ({
+      .filter((item): item is Category => typeof (item as Category)?.id === "number" && typeof (item as Category)?.name === "string")
+      .map((item) => ({
         id: item.id,
         name: item.name,
-        slug: typeof item?.slug === "string" ? item.slug : undefined,
+        slug: typeof item.slug === "string" ? item.slug : undefined,
       }))
   } catch {
     return []

@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -27,7 +28,7 @@ export const defaultSeoState: SeoState = {
 
 export function prepareSeoPayload(seo?: SeoState) {
   if (!seo) return undefined
-  const payload: Record<string, any> = {}
+  const payload: Record<string, string | number | boolean | null | undefined> = {}
   const textKeys: Array<keyof SeoState> = [
     "metaTitle",
     "metaDescription",
@@ -91,7 +92,14 @@ export function SeoFields({ value, onChange }: { value: SeoState; onChange: (nex
         <div className="grid gap-2">
           <Label className="text-sm">Изображение для соцсетей</Label>
           {ogPreview ? (
-            <img src={ogPreview} alt="OG preview" className="h-32 w-full rounded-lg object-cover" />
+            <Image
+              src={ogPreview}
+              alt="OG preview"
+              width={800}
+              height={320}
+              unoptimized
+              className="h-32 w-full rounded-lg object-cover"
+            />
           ) : state.ogImageId ? (
             <div className="text-xs text-muted-foreground">Изображение прикреплено.</div>
           ) : (
