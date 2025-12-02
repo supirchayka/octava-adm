@@ -35,27 +35,33 @@ type HomeContentKeys =
 
 export function HomeForm({ initialData, categories }: Props) {
   const normalized = initialData ? unwrapData<Record<string, unknown>>(initialData) : null
-  const normalizedHero = normalized?.hero ?? {}
-  const normalizedInterior = normalized?.interior ?? {}
+  const normalizedRecord = typeof normalized === "object" && normalized !== null ? normalized : null
+  const normalizedHero = getRecord(normalizedRecord, "hero")
+  const normalizedInterior = getRecord(normalizedRecord, "interior")
   const [content, setContent] = useState<Record<HomeContentKeys, string>>({
-    heroTitle: normalizedHero?.title ?? normalized?.heroTitle ?? "",
-    heroSubtitle: normalizedHero?.subtitle ?? normalized?.heroSubtitle ?? "",
-    heroCtaText: normalizedHero?.ctaText ?? normalized?.heroCtaText ?? "",
-    heroCtaUrl: normalizedHero?.ctaUrl ?? normalized?.heroCtaUrl ?? "",
-    subheroTitle: normalized?.subHero?.title ?? normalized?.subheroTitle ?? "",
-    subheroSubtitle: normalized?.subHero?.subtitle ?? normalized?.subheroSubtitle ?? "",
-    interiorText: normalizedInterior?.text ?? normalized?.interiorText ?? "",
+    heroTitle: getString(normalizedHero, "title", getString(normalizedRecord, "heroTitle")),
+    heroSubtitle: getString(normalizedHero, "subtitle", getString(normalizedRecord, "heroSubtitle")),
+    heroCtaText: getString(normalizedHero, "ctaText", getString(normalizedRecord, "heroCtaText")),
+    heroCtaUrl: getString(normalizedHero, "ctaUrl", getString(normalizedRecord, "heroCtaUrl")),
+    subheroTitle: getString(getRecord(normalizedRecord, "subHero"), "title", getString(normalizedRecord, "subheroTitle")),
+    subheroSubtitle: getString(
+      getRecord(normalizedRecord, "subHero"),
+      "subtitle",
+      getString(normalizedRecord, "subheroSubtitle"),
+    ),
+    interiorText: getString(normalizedInterior, "text", getString(normalizedRecord, "interiorText")),
   })
   const [heroImages, setHeroImages] = useState<MediaState[]>(() => {
-    const list = normalizeMedia(normalizedHero?.images ?? normalized?.heroImages)
+    const heroImagesSource = getArray(normalizedHero, "images") ?? getArray(normalizedRecord, "heroImages")
+    const list = normalizeMedia(heroImagesSource)
     return list.length ? list : [{ id: null, fileId: null, previewUrl: null, alt: "", caption: "" }]
   })
   const [interiorImages, setInteriorImages] = useState<MediaState[]>(() =>
-    normalizeMedia(normalizedInterior?.images ?? normalized?.interiorImages)
+    normalizeMedia(getArray(normalizedInterior, "images") ?? getArray(normalizedRecord, "interiorImages"))
   )
   const [directions, setDirections] = useState<DirectionState[]>(() => ensureFourDirections(normalized?.directions))
   const [subheroImage, setSubheroImage] = useState<SubheroImageState>(() =>
-    normalizeSubheroImage(normalized?.subHero?.image ?? normalized?.subheroImage)
+    normalizeSubheroImage(getRecord(normalizedRecord, "subHero")?.image ?? getValue(normalizedRecord, "subheroImage"))
   )
   const [seo, setSeo] = useState<SeoState>(() => ((normalized?.seo as SeoState) ?? defaultSeoState))
   const [saving, setSaving] = useState(false)
@@ -452,6 +458,26 @@ type DirectionPayload = { categoryId: number; order: number }
 function findMissingFileIndex(list: MediaState[]): number | null {
   const missingIndex = list.findIndex((item) => !ensureNumber(item.fileId))
   return missingIndex === -1 ? null : missingIndex
+}
+
+function getRecord(record: Record<string, unknown> | null, key: string): Record<string, unknown> | null {
+  const value = getValue(record, key)
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null
+}
+
+function getArray(record: Record<string, unknown> | null, key: string): unknown[] | undefined {
+  const value = getValue(record, key)
+  return Array.isArray(value) ? value : undefined
+}
+
+function getString(record: Record<string, unknown> | null, key: string, fallback = ""): string {
+  const value = getValue(record, key)
+  return typeof value === "string" ? value : fallback
+}
+
+function getValue(record: Record<string, unknown> | null, key: string): unknown {
+  if (!record) return undefined
+  return record[key]
 }
 
 function buildDirectionsPayload(list: DirectionState[]): DirectionPayload[] | null {
