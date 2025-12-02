@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,24 +11,29 @@ import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
 import type { SimpleImageValue } from "@/components/image-field"
 
 interface Props {
-  initialData: Record<string, any> | null
+  initialData: Record<string, unknown> | null
 }
 
 type FactState = { title: string; text: string }
+type HeroImagePayload = { id?: number | null; fileId?: number | null; path?: string | null; file?: { path?: string | null } }
 
 type AboutContentKeys = "heroTitle" | "heroDescription" | "howWeAchieveText" | "heroCtaTitle" | "heroCtaSubtitle"
 
 export function AboutForm({ initialData }: Props) {
-  const normalized = initialData ? unwrapData<Record<string, any>>(initialData) : null
+  const normalized = initialData ? unwrapData<Record<string, unknown>>(initialData) : null
+  const getContentValue = (key: AboutContentKeys) => {
+    const value = normalized?.[key]
+    return typeof value === "string" ? value : ""
+  }
   const [content, setContent] = useState<Record<AboutContentKeys, string>>({
-    heroTitle: normalized?.heroTitle ?? "",
-    heroDescription: normalized?.heroDescription ?? "",
-    howWeAchieveText: normalized?.howWeAchieveText ?? "",
-    heroCtaTitle: normalized?.heroCtaTitle ?? "",
-    heroCtaSubtitle: normalized?.heroCtaSubtitle ?? "",
+    heroTitle: getContentValue("heroTitle"),
+    heroDescription: getContentValue("heroDescription"),
+    howWeAchieveText: getContentValue("howWeAchieveText"),
+    heroCtaTitle: getContentValue("heroCtaTitle"),
+    heroCtaSubtitle: getContentValue("heroCtaSubtitle"),
   })
   const [heroImage, setHeroImage] = useState<SimpleImageValue>(() => {
-    const file = normalized?.heroImage as any
+    const file = normalized?.heroImage as HeroImagePayload | undefined
     const previewPath = file?.path ?? file?.file?.path ?? null
     const fileId = normalized?.heroImageFileId ?? file?.fileId ?? file?.id ?? null
     return {
@@ -83,7 +89,7 @@ export function AboutForm({ initialData }: Props) {
     }
 
     try {
-      const payload: Record<string, any> = {
+      const payload: Record<string, unknown> = {
         heroImageFileId: heroImage.fileId,
         facts: facts.map((fact, index) => ({
           title: fact.title || null,
@@ -104,8 +110,9 @@ export function AboutForm({ initialData }: Props) {
       })
       if (!res.ok) throw new Error(await res.text())
       setMessage("Страница обновлена")
-    } catch (err: any) {
-      setError(err.message || "Не удалось сохранить страницу")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Не удалось сохранить страницу"
+      setError(message)
     } finally {
       setSaving(false)
     }
@@ -148,7 +155,14 @@ export function AboutForm({ initialData }: Props) {
           <div className="space-y-2">
             <label className="text-sm font-medium">Обложка</label>
             {heroImage.previewUrl ? (
-              <img src={heroImage.previewUrl} alt="Hero" className="h-48 w-full rounded-lg object-cover" />
+              <Image
+                src={heroImage.previewUrl}
+                alt="Hero"
+                width={1200}
+                height={360}
+                unoptimized
+                className="h-48 w-full rounded-lg object-cover"
+              />
             ) : (
               <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
                 Добавьте фото, которое лучше всего отражает атмосферу.
@@ -215,7 +229,7 @@ export function AboutForm({ initialData }: Props) {
   )
 }
 
-function normalizeFacts(list: any): FactState[] {
+function normalizeFacts(list: unknown): FactState[] {
   if (!Array.isArray(list) || list.length === 0) {
     return [{ title: "", text: "" }]
   }
