@@ -469,20 +469,24 @@ function ensureFourDirections(list: unknown): DirectionState[] {
 type MediaPayload = { fileId: number; alt?: string; caption?: string; order: number }
 
 function buildMediaPayload(list: MediaState[]): MediaPayload[] {
-  return list
-    .map((item, index) => {
-      const fileId = ensureNumber(item.fileId)
-      if (!fileId) return null
-      const alt = item.alt?.trim() ?? ""
-      const caption = item.caption?.trim() ?? ""
-      return {
-        fileId,
-        alt: alt === "" ? undefined : alt,
-        caption: caption === "" ? undefined : caption,
-        order: index,
-      }
+  const payloads: MediaPayload[] = []
+
+  list.forEach((item, index) => {
+    const fileId = ensureNumber(item.fileId)
+    if (!fileId) return
+
+    const alt = item.alt?.trim() ?? ""
+    const caption = item.caption?.trim() ?? ""
+
+    payloads.push({
+      fileId,
+      alt: alt === "" ? undefined : alt,
+      caption: caption === "" ? undefined : caption,
+      order: index,
     })
-    .filter((item): item is MediaPayload => item !== null)
+  })
+
+  return payloads
 }
 
 type DirectionPayload = { categoryId: number; order: number }
