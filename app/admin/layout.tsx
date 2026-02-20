@@ -10,6 +10,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link className="hover:underline" href="/admin/catalog/categories">Категории</Link>
           <Link className="hover:underline" href="/admin/catalog/services">Услуги</Link>
           <Link className="hover:underline" href="/admin/catalog/devices">Аппараты</Link>
+          <Link className="hover:underline" href="/admin/catalog/specialists">Специалисты</Link>
           <Link className="hover:underline" href="/admin/pages">Страницы</Link>
           <Link className="hover:underline" href="/admin/org">Организация</Link>
           <Link className="hover:underline" href="/admin/leads">Лиды</Link>

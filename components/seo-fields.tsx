@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { FileUploader } from "@/components/file-uploader"
-import { absoluteUploadUrl } from "@/lib/utils"
+import { resolveMediaPreviewUrl } from "@/lib/media"
 
 export type SeoState = {
   metaTitle?: string | null
@@ -17,7 +17,12 @@ export type SeoState = {
   ogTitle?: string | null
   ogDescription?: string | null
   ogImageId?: number | null
-  ogImage?: { id?: number | null; path?: string | null } | null
+  ogImage?: {
+    id?: number | null
+    path?: string | null
+    url?: string | null
+    file?: { path?: string | null; url?: string | null } | null
+  } | null
 }
 
 export const defaultSeoState: SeoState = {
@@ -49,7 +54,7 @@ export function prepareSeoPayload(seo?: SeoState) {
 
 export function SeoFields({ value, onChange }: { value: SeoState; onChange: (next: SeoState) => void }) {
   const state = { ...defaultSeoState, ...value }
-  const ogPreview = state.ogImage?.path ? absoluteUploadUrl(state.ogImage.path) : null
+  const ogPreview = resolveMediaPreviewUrl(state.ogImage)
 
   function update(key: keyof SeoState, val: string | number | boolean | null) {
     onChange({ ...state, [key]: val })

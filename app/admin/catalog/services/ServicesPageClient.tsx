@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { ServiceFormDialog, type CategoryOption, type DeviceOption } from "./service-form"
+import { ServiceFormDialog, type CategoryOption, type DeviceOption, type SpecialistOption } from "./service-form"
 
 type Category = { id: number; slug: string; name: string; description: string | null }
 type Service = {
@@ -21,6 +21,7 @@ export default function ServicesPageClient() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
   const [services, setServices] = useState<Service[]>([])
   const [devices, setDevices] = useState<DeviceOption[]>([])
+  const [specialists, setSpecialists] = useState<SpecialistOption[]>([])
   const [servicesError, setServicesError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -51,6 +52,32 @@ export default function ServicesPageClient() {
         )
       })
       .catch(() => setDevices([]))
+  }, [])
+
+  useEffect(() => {
+    fetch(`/api/admin/catalog/specialists`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(await res.text())
+        return res.json()
+      })
+      .then((payload: unknown) => {
+        const list = parseList<
+          SpecialistOption & {
+            firstName?: string | null
+            lastName?: string | null
+            specialization?: string | null
+          }
+        >(payload)
+        setSpecialists(
+          list
+            .filter((item) => typeof item.id === "number")
+            .map((item) => ({
+              id: item.id,
+              label: `${item.firstName ?? ""} ${item.lastName ?? ""}`.trim() || item.specialization || `#${item.id}`,
+            }))
+        )
+      })
+      .catch(() => setSpecialists([]))
   }, [])
 
   async function loadServices(categoryId: number | null) {
@@ -107,6 +134,7 @@ export default function ServicesPageClient() {
           categoryId={selectedCategoryId || 0}
           categories={cats as CategoryOption[]}
           devices={devices}
+          specialists={specialists}
           triggerLabel="+ Добавить услугу"
           disabled={!selectedCategoryId}
           onCompleted={() => loadServices(selectedCategoryId)}
@@ -140,6 +168,7 @@ export default function ServicesPageClient() {
                       categoryId={selectedCategoryId || s.categoryId || 0}
                       categories={cats as CategoryOption[]}
                       devices={devices}
+                      specialists={specialists}
                       triggerLabel="Редактировать"
                       onCompleted={() => loadServices(selectedCategoryId)}
                     />

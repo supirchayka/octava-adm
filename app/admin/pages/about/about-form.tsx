@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { FileUploader } from "@/components/file-uploader"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
+import { resolveMediaFileId, resolveMediaPreviewUrl } from "@/lib/media"
 import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
 import type { SimpleImageValue } from "@/components/image-field"
 
@@ -15,7 +16,13 @@ interface Props {
 }
 
 type FactState = { title: string; text: string }
-type HeroImagePayload = { id?: number | null; fileId?: number | null; path?: string | null; file?: { path?: string | null } }
+type HeroImagePayload = {
+  id?: number | null
+  fileId?: number | null
+  path?: string | null
+  url?: string | null
+  file?: { id?: number | null; path?: string | null; url?: string | null } | null
+}
 
 type AboutContentKeys = "heroTitle" | "heroDescription" | "howWeAchieveText" | "heroCtaTitle" | "heroCtaSubtitle"
 
@@ -34,14 +41,12 @@ export function AboutForm({ initialData }: Props) {
   })
   const [heroImage, setHeroImage] = useState<SimpleImageValue>(() => {
     const file = normalized?.heroImage as HeroImagePayload | undefined
-    const previewPath = file?.path ?? file?.file?.path ?? null
-    const rawFileId = normalized?.heroImageFileId ?? file?.fileId ?? file?.id ?? null
-    const fileId = typeof rawFileId === "number" ? rawFileId : null
-    const imageId = typeof file?.id === "number" ? file.id : null
+    const fileId = resolveMediaFileId({ fileId: normalized?.heroImageFileId, file }) ?? resolveMediaFileId(file)
+    const imageId = resolveMediaFileId(file)
     return {
       id: imageId,
       fileId,
-      previewUrl: previewPath ? absoluteUploadUrl(previewPath) : null,
+      previewUrl: resolveMediaPreviewUrl(file),
     }
   })
   const [facts, setFacts] = useState<FactState[]>(() => normalizeFacts(normalized?.facts))

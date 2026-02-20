@@ -9,12 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
 import { ImageField, type SimpleImageValue } from "@/components/image-field"
 import { ImageListField } from "@/components/image-list-field"
-import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
+import { asNumber, resolveMediaFileId, resolveMediaPreviewUrl } from "@/lib/media"
+import { unwrapData } from "@/lib/utils"
 
 const priceTypes = ["BASE", "EXTRA", "PACKAGE"]
 
 export type CategoryOption = { id: number; name: string }
 export type DeviceOption = { id: number; label: string }
+export type SpecialistOption = { id: number; label: string }
 
 type ServiceDetail = {
   id: number
@@ -29,11 +31,27 @@ type ServiceDetail = {
   ctaUrl?: string | null
   sortOrder?: number | null
   heroImageFileId?: number | null
-  heroImage?: { fileId?: number | null; file?: { path?: string | null }; path?: string | null } | null
+  heroImage?: {
+    id?: number | null
+    fileId?: number | null
+    file?: { id?: number | null; path?: string | null; url?: string | null } | null
+    path?: string | null
+    url?: string | null
+  } | null
   galleryImageFileIds?: number[] | null
-  images?: Array<{ purpose: "HERO" | "GALLERY"; order: number; file?: { id: number; path?: string | null } }>
+  images?: Array<{
+    id?: number | null
+    fileId?: number | null
+    purpose: "HERO" | "GALLERY"
+    order: number
+    file?: { id?: number | null; path?: string | null; url?: string | null } | null
+    path?: string | null
+    url?: string | null
+  }>
   devices?: Array<{ deviceId?: number | null; device?: { id: number } }>
   usedDevices?: Array<{ id?: number; deviceId?: number; device?: { id: number } } | number>
+  specialistIds?: number[] | null
+  specialists?: Array<{ id?: number | null; specialistId?: number | null; specialist?: { id?: number | null } }>
   servicePricesExtended?: Array<{
     id: number
     title: string
@@ -91,6 +109,7 @@ type ServicePayload = {
   heroImageFileId: number | null
   galleryImageFileIds: number[]
   usedDeviceIds: number[]
+  specialistIds: number[]
   servicePricesExtended: ServicePricePayload[]
   seo?: ReturnType<typeof prepareSeoPayload>
 }
@@ -99,6 +118,7 @@ interface Props {
   categoryId: number
   categories: CategoryOption[]
   devices: DeviceOption[]
+  specialists: SpecialistOption[]
   triggerLabel: string
   serviceId?: number
   onCompleted: () => void
@@ -109,6 +129,7 @@ export function ServiceFormDialog({
   categoryId,
   categories,
   devices,
+  specialists,
   triggerLabel,
   serviceId,
   onCompleted,
@@ -134,6 +155,7 @@ export function ServiceFormDialog({
   const [heroImage, setHeroImage] = useState<SimpleImageValue>({ id: null, fileId: null, previewUrl: null })
   const [galleryImages, setGalleryImages] = useState<SimpleImageValue[]>([])
   const [selectedDevices, setSelectedDevices] = useState<number[]>([])
+  const [selectedSpecialists, setSelectedSpecialists] = useState<number[]>([])
   const [prices, setPrices] = useState<PriceRow[]>([])
   const [seo, setSeo] = useState<SeoState>(defaultSeoState)
 
@@ -155,14 +177,21 @@ export function ServiceFormDialog({
       .then((payload: ServiceDetail) => {
         const data = unwrapData<ServiceDetail>(payload)
         const heroFromImages = data.images?.find((img) => img.purpose === "HERO")
-        const heroPath = heroFromImages?.file?.path ?? data.heroImage?.file?.path ?? data.heroImage?.path ?? null
-        const heroFileId = data.heroImageFileId ?? data.heroImage?.fileId ?? heroFromImages?.file?.id ?? null
+        const heroFileId =
+          data.heroImageFileId ??
+          resolveMediaFileId(data.heroImage) ??
+          resolveMediaFileId(heroFromImages) ??
+          null
         const galleryFromImages = (data.images ?? [])
           .filter((img) => img.purpose === "GALLERY")
           .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
         const galleryFromField = data.galleryImageFileIds ?? []
         const priceSource = data.servicePricesExtended ?? data.pricesExtended ?? []
         const devicesSource = data.usedDevices ?? data.devices ?? []
+        const specialistsSource = data.specialistIds ?? []
+        const specialistsFromRelations = (data.specialists ?? [])
+          .map((item) => asNumber(item?.id ?? item?.specialistId ?? item?.specialist?.id))
+          .filter((id): id is number => typeof id === "number")
         setForm({
           categoryId: data.categoryId,
           name: data.name ?? "",
@@ -176,16 +205,16 @@ export function ServiceFormDialog({
           sortOrder: data.sortOrder?.toString() ?? "",
         })
         setHeroImage({
-          id: heroFromImages?.file?.id ?? data.heroImage?.fileId ?? null,
+          id: resolveMediaFileId(heroFromImages) ?? resolveMediaFileId(data.heroImage),
           fileId: heroFileId ?? null,
-          previewUrl: heroPath ? absoluteUploadUrl(heroPath) : null,
+          previewUrl: resolveMediaPreviewUrl(heroFromImages) ?? resolveMediaPreviewUrl(data.heroImage),
         })
         if (galleryFromImages.length) {
           setGalleryImages(
             galleryFromImages.map((img) => ({
-              id: img.file?.id ?? null,
-              fileId: img.file?.id ?? null,
-              previewUrl: img.file?.path ? absoluteUploadUrl(img.file.path) : null,
+              id: resolveMediaFileId(img),
+              fileId: resolveMediaFileId(img),
+              previewUrl: resolveMediaPreviewUrl(img),
             }))
           )
         } else {
@@ -207,6 +236,15 @@ export function ServiceFormDialog({
               return null
             })
             .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
+        )
+        setSelectedSpecialists(
+          Array.from(
+            new Set(
+              [...specialistsSource, ...specialistsFromRelations]
+                .map((id) => asNumber(id))
+                .filter((id): id is number => typeof id === "number" && !Number.isNaN(id))
+            )
+          )
         )
         setPrices(
           priceSource.map((row) => ({
@@ -244,6 +282,7 @@ export function ServiceFormDialog({
     setHeroImage({ id: null, fileId: null, previewUrl: null })
     setGalleryImages([])
     setSelectedDevices([])
+    setSelectedSpecialists([])
     setPrices([])
     setSeo(defaultSeoState)
     setError(null)
@@ -257,6 +296,10 @@ export function ServiceFormDialog({
 
   function toggleDevice(id: number) {
     setSelectedDevices((prev) => (prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]))
+  }
+
+  function toggleSpecialist(id: number) {
+    setSelectedSpecialists((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]))
   }
 
   function updatePriceRow(index: number, field: keyof PriceRow, value: string | boolean) {
@@ -294,6 +337,7 @@ export function ServiceFormDialog({
         heroImageFileId: heroImage.fileId,
         galleryImageFileIds: galleryIds,
         usedDeviceIds: selectedDevices,
+        specialistIds: selectedSpecialists,
         servicePricesExtended: prices
           .filter((row) => row.title && row.price)
           .map((row) => ({
@@ -432,6 +476,23 @@ export function ServiceFormDialog({
                   </label>
                 ))}
                 {!devices.length && <div className="text-xs text-muted-foreground">Нет загруженных аппаратов</div>}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Специалисты</div>
+              <div className="grid gap-2">
+                {specialists.map((specialist) => (
+                  <label key={specialist.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={selectedSpecialists.includes(specialist.id)}
+                      onChange={() => toggleSpecialist(specialist.id)}
+                    />
+                    {specialist.label}
+                  </label>
+                ))}
+                {!specialists.length && <div className="text-xs text-muted-foreground">Нет загруженных специалистов</div>}
               </div>
             </div>
 

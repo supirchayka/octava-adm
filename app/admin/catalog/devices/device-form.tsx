@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
 import { ImageField, type SimpleImageValue } from "@/components/image-field"
 import { ImageListField } from "@/components/image-list-field"
-import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
+import { resolveMediaFileId, resolveMediaPreviewUrl } from "@/lib/media"
+import { unwrapData } from "@/lib/utils"
 
 type DeviceDetail = {
   id: number
@@ -18,8 +19,22 @@ type DeviceDetail = {
   principle: string
   safetyNotes?: string | null
   heroImageFileId?: number | null
-  heroImage?: { fileId?: number | null; file?: { path?: string | null } } | null
-  images?: Array<{ purpose: "HERO" | "GALLERY"; order?: number | null; file?: { id: number; path?: string | null } }>
+  heroImage?: {
+    id?: number | null
+    fileId?: number | null
+    path?: string | null
+    url?: string | null
+    file?: { id?: number | null; path?: string | null; url?: string | null } | null
+  } | null
+  images?: Array<{
+    id?: number | null
+    fileId?: number | null
+    purpose: "HERO" | "GALLERY"
+    order?: number | null
+    path?: string | null
+    url?: string | null
+    file?: { id?: number | null; path?: string | null; url?: string | null } | null
+  }>
   galleryImageFileIds?: number[]
   seo?: SeoState
 }
@@ -60,8 +75,11 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
       .then((payload: DeviceDetailResponse) => {
         const data = unwrapData<DeviceDetailResponse>(payload)
         const heroFromImages = data.images?.find((img) => img.purpose === "HERO")
-        const heroPath = heroFromImages?.file?.path ?? data.heroImage?.file?.path ?? null
-        const heroFileId = data.heroImageFileId ?? data.heroImage?.fileId ?? heroFromImages?.file?.id ?? null
+        const heroFileId =
+          data.heroImageFileId ??
+          resolveMediaFileId(data.heroImage) ??
+          resolveMediaFileId(heroFromImages) ??
+          null
         const galleryFromImages = (data.images ?? [])
           .filter((img) => img.purpose === "GALLERY")
           .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
@@ -74,16 +92,16 @@ export function DeviceFormDialog({ deviceId, triggerLabel, onCompleted }: Props)
           safetyNotes: data.safetyNotes ?? "",
         })
         setHeroImage({
-          id: heroFromImages?.file?.id ?? data.heroImage?.fileId ?? null,
+          id: resolveMediaFileId(heroFromImages) ?? resolveMediaFileId(data.heroImage),
           fileId: heroFileId ?? null,
-          previewUrl: heroPath ? absoluteUploadUrl(heroPath) : null,
+          previewUrl: resolveMediaPreviewUrl(heroFromImages) ?? resolveMediaPreviewUrl(data.heroImage),
         })
         if (galleryFromImages.length) {
           setGalleryImages(
             galleryFromImages.map((img) => ({
-              id: img.file?.id ?? null,
-              fileId: img.file?.id ?? null,
-              previewUrl: img.file?.path ? absoluteUploadUrl(img.file.path) : null,
+              id: resolveMediaFileId(img),
+              fileId: resolveMediaFileId(img),
+              previewUrl: resolveMediaPreviewUrl(img),
             }))
           )
         } else {

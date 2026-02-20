@@ -421,20 +421,29 @@ function normalizeMedia(list: unknown): MediaState[] {
       fileId: ensureNumber(item?.fileId ?? item?.file?.id),
       previewUrl: item?.file?.path
         ? absoluteUploadUrl(item.file.path)
-        : item?.url
-          ? absoluteUploadUrl(item.url)
-          : item?.path
-            ? absoluteUploadUrl(item.path)
-            : null,
+        : item?.file?.url
+          ? absoluteUploadUrl(item.file.url)
+          : item?.url
+            ? absoluteUploadUrl(item.url)
+            : item?.path
+              ? absoluteUploadUrl(item.path)
+              : null,
       alt: typeof item?.alt === "string" ? item.alt : "",
       caption: typeof item?.caption === "string" ? item.caption : "",
     }))
 }
 
 function normalizeSubheroImage(value: unknown): SubheroImageState {
-  const candidate = value as { fileId?: unknown; id?: unknown; file?: { id?: unknown; path?: string | null }; path?: string | null; url?: string | null; alt?: string | null }
+  const candidate = value as {
+    fileId?: unknown
+    id?: unknown
+    file?: { id?: unknown; path?: string | null; url?: string | null }
+    path?: string | null
+    url?: string | null
+    alt?: string | null
+  }
   const fileId = ensureNumber(candidate?.fileId ?? candidate?.id ?? candidate?.file?.id)
-  const previewPath = candidate?.path ?? candidate?.url ?? candidate?.file?.path ?? null
+  const previewPath = candidate?.path ?? candidate?.url ?? candidate?.file?.path ?? candidate?.file?.url ?? null
   return {
     id: ensureNumber(candidate?.id),
     fileId: fileId ?? null,

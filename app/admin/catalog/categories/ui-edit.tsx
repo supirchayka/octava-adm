@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
 import { ImageField, type SimpleImageValue } from "@/components/image-field"
-import { absoluteUploadUrl, unwrapData } from "@/lib/utils"
+import { resolveMediaFileId, resolveMediaPreviewUrl } from "@/lib/media"
+import { unwrapData } from "@/lib/utils"
 
 interface CategoryDetail {
   id: number
@@ -15,8 +16,21 @@ interface CategoryDetail {
   description: string | null
   sortOrder?: number | null
   heroImageFileId?: number | null
-  heroImage?: { fileId: number | null; path?: string; file?: { id?: number; path?: string } } | null
-  images?: Array<{ purpose: "HERO" | "GALLERY"; file?: { id: number; path?: string } }>
+  heroImage?: {
+    id?: number | null
+    fileId?: number | null
+    path?: string | null
+    url?: string | null
+    file?: { id?: number | null; path?: string | null; url?: string | null } | null
+  } | null
+  images?: Array<{
+    id?: number | null
+    fileId?: number | null
+    purpose: "HERO" | "GALLERY"
+    path?: string | null
+    url?: string | null
+    file?: { id?: number | null; path?: string | null; url?: string | null } | null
+  }>
   seo?: SeoState
 }
 
@@ -48,15 +62,18 @@ export function EditCategoryDialog({
       .then((payload: CategoryDetail) => {
         const json = unwrapData<CategoryDetail>(payload)
         const heroFromImages = json.images?.find((img) => img.purpose === "HERO")
-        const heroPath = heroFromImages?.file?.path ?? json.heroImage?.file?.path ?? json.heroImage?.path ?? null
-        const heroFileId = json.heroImageFileId ?? json.heroImage?.fileId ?? heroFromImages?.file?.id ?? null
+        const heroFileId =
+          json.heroImageFileId ??
+          resolveMediaFileId(json.heroImage) ??
+          resolveMediaFileId(heroFromImages) ??
+          null
         setName(json.name)
         setDescription(json.description ?? "")
         setSortOrder(json.sortOrder?.toString() ?? "")
         setHeroImage({
-          id: heroFromImages?.file?.id ?? json.heroImage?.fileId ?? null,
+          id: resolveMediaFileId(heroFromImages) ?? resolveMediaFileId(json.heroImage),
           fileId: heroFileId ?? null,
-          previewUrl: heroPath ? absoluteUploadUrl(heroPath) : null,
+          previewUrl: resolveMediaPreviewUrl(heroFromImages) ?? resolveMediaPreviewUrl(json.heroImage),
         })
         setSeo(json.seo ?? defaultSeoState)
       })
