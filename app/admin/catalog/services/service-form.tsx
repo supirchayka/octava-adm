@@ -635,17 +635,17 @@ export function ServiceFormDialog({
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">РџРѕРєР°Р·Р°РЅРёСЏ</div>
+                <div className="text-sm font-medium">Показания</div>
                 <Button type="button" variant="outline" onClick={() => addTextRow(setIndications)}>
-                  Р”РѕР±Р°РІРёС‚СЊ РїРѕРєР°Р·Р°РЅРёРµ
+                  Добавить показание
                 </Button>
               </div>
-              {!indications.length && <div className="text-xs text-muted-foreground">РќРµ РґРѕР±Р°РІР»РµРЅРѕ РЅРё РѕРґРЅРѕРіРѕ РїСѓРЅРєС‚Р°</div>}
+              {!indications.length && <div className="text-xs text-muted-foreground">Не добавлено ни одного пункта</div>}
               {indications.map((value, index) => (
                 <div key={`indication-${index}`} className="space-y-2 rounded-xl border p-3">
                   <Textarea value={value} onChange={(e) => updateTextRow(setIndications, index, e.target.value)} rows={3} />
                   <Button type="button" variant="ghost" onClick={() => removeTextRow(setIndications, index)}>
-                    РЈРґР°Р»РёС‚СЊ
+                    Удалить
                   </Button>
                 </div>
               ))}
@@ -653,17 +653,17 @@ export function ServiceFormDialog({
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">РџСЂРѕС‚РёРІРѕРїРѕРєР°Р·Р°РЅРёСЏ</div>
+                <div className="text-sm font-medium">Противопоказания</div>
                 <Button type="button" variant="outline" onClick={() => addTextRow(setContraindications)}>
-                  Р”РѕР±Р°РІРёС‚СЊ РїСЂРѕС‚РёРІРѕРїРѕРєР°Р·Р°РЅРёРµ
+                  Добавить противопоказание
                 </Button>
               </div>
-              {!contraindications.length && <div className="text-xs text-muted-foreground">РќРµ РґРѕР±Р°РІР»РµРЅРѕ РЅРё РѕРґРЅРѕРіРѕ РїСѓРЅРєС‚Р°</div>}
+              {!contraindications.length && <div className="text-xs text-muted-foreground">Не добавлено ни одного пункта</div>}
               {contraindications.map((value, index) => (
                 <div key={`contraindication-${index}`} className="space-y-2 rounded-xl border p-3">
                   <Textarea value={value} onChange={(e) => updateTextRow(setContraindications, index, e.target.value)} rows={3} />
                   <Button type="button" variant="ghost" onClick={() => removeTextRow(setContraindications, index)}>
-                    РЈРґР°Р»РёС‚СЊ
+                    Удалить
                   </Button>
                 </div>
               ))}
@@ -671,17 +671,17 @@ export function ServiceFormDialog({
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">РљР°Рє РїРѕРґРіРѕС‚РѕРІРёС‚СЊСЃСЏ</div>
+                <div className="text-sm font-medium">Как подготовиться</div>
                 <Button type="button" variant="outline" onClick={() => addTextRow(setPreparationSteps)}>
-                  Р”РѕР±Р°РІРёС‚СЊ С€Р°Рі
+                  Добавить шаг
                 </Button>
               </div>
-              {!preparationSteps.length && <div className="text-xs text-muted-foreground">РќРµ РґРѕР±Р°РІР»РµРЅРѕ РЅРё РѕРґРЅРѕРіРѕ С€Р°РіР°</div>}
+              {!preparationSteps.length && <div className="text-xs text-muted-foreground">Не добавлено ни одного шага</div>}
               {preparationSteps.map((value, index) => (
                 <div key={`prep-${index}`} className="space-y-2 rounded-xl border p-3">
                   <Textarea value={value} onChange={(e) => updateTextRow(setPreparationSteps, index, e.target.value)} rows={3} />
                   <Button type="button" variant="ghost" onClick={() => removeTextRow(setPreparationSteps, index)}>
-                    РЈРґР°Р»РёС‚СЊ
+                    Удалить
                   </Button>
                 </div>
               ))}
@@ -689,17 +689,17 @@ export function ServiceFormDialog({
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">РџРѕСЃР»Рµ РїСЂРѕС†РµРґСѓСЂС‹</div>
+                <div className="text-sm font-medium">После процедуры</div>
                 <Button type="button" variant="outline" onClick={() => addTextRow(setRehabSteps)}>
-                  Р”РѕР±Р°РІРёС‚СЊ С€Р°Рі
+                  Добавить шаг
                 </Button>
               </div>
-              {!rehabSteps.length && <div className="text-xs text-muted-foreground">РќРµ РґРѕР±Р°РІР»РµРЅРѕ РЅРё РѕРґРЅРѕРіРѕ С€Р°РіР°</div>}
+              {!rehabSteps.length && <div className="text-xs text-muted-foreground">Не добавлено ни одного шага</div>}
               {rehabSteps.map((value, index) => (
                 <div key={`rehab-${index}`} className="space-y-2 rounded-xl border p-3">
                   <Textarea value={value} onChange={(e) => updateTextRow(setRehabSteps, index, e.target.value)} rows={3} />
                   <Button type="button" variant="ghost" onClick={() => removeTextRow(setRehabSteps, index)}>
-                    РЈРґР°Р»РёС‚СЊ
+                    Удалить
                   </Button>
                 </div>
               ))}
@@ -707,24 +707,24 @@ export function ServiceFormDialog({
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">Р§Р°СЃС‚С‹Рµ РІРѕРїСЂРѕСЃС‹</div>
+                <div className="text-sm font-medium">Частые вопросы</div>
                 <Button type="button" variant="outline" onClick={addFaqRow}>
-                  Р”РѕР±Р°РІРёС‚СЊ РІРѕРїСЂРѕСЃ
+                  Добавить вопрос
                 </Button>
               </div>
-              {!faqRows.length && <div className="text-xs text-muted-foreground">РќРµ РґРѕР±Р°РІР»РµРЅРѕ РЅРё РѕРґРЅРѕРіРѕ РІРѕРїСЂРѕСЃР°</div>}
+              {!faqRows.length && <div className="text-xs text-muted-foreground">Не добавлено ни одного вопроса</div>}
               {faqRows.map((row, index) => (
                 <div key={`faq-${index}`} className="space-y-2 rounded-xl border p-3">
                   <div>
-                    <label className="text-sm">Р’РѕРїСЂРѕСЃ</label>
+                    <label className="text-sm">Вопрос</label>
                     <Textarea value={row.question} onChange={(e) => updateFaqRow(index, "question", e.target.value)} rows={2} />
                   </div>
                   <div>
-                    <label className="text-sm">РћС‚РІРµС‚</label>
+                    <label className="text-sm">Ответ</label>
                     <Textarea value={row.answer} onChange={(e) => updateFaqRow(index, "answer", e.target.value)} rows={3} />
                   </div>
                   <Button type="button" variant="ghost" onClick={() => removeFaqRow(index)}>
-                    РЈРґР°Р»РёС‚СЊ
+                    Удалить
                   </Button>
                 </div>
               ))}
