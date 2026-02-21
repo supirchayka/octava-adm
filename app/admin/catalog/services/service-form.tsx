@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -73,6 +73,18 @@ type ServiceDetail = {
     order?: number | null
     isActive?: boolean | null
   }>
+  indications?: string[] | null
+  contraindications?: string[] | null
+  preparationSteps?: string[] | null
+  rehabSteps?: string[] | null
+  preparationChecklist?: Array<{ text?: string | null }>
+  rehabChecklist?: Array<{ text?: string | null }>
+  faq?: Array<{
+    id?: number
+    question?: string | null
+    answer?: string | null
+    order?: number | null
+  }>
   seo?: SeoState
 }
 
@@ -84,6 +96,11 @@ type PriceRow = {
   sessionsCount: string
   order: string
   isActive: boolean
+}
+
+type FaqRow = {
+  question: string
+  answer: string
 }
 
 type ServicePricePayload = {
@@ -113,6 +130,11 @@ type ServicePayload = {
   usedDeviceIds: number[]
   specialistIds: number[]
   servicePricesExtended: ServicePricePayload[]
+  indications: string[]
+  contraindications: string[]
+  preparationSteps: string[]
+  rehabSteps: string[]
+  faq: FaqRow[]
   seo?: ReturnType<typeof prepareSeoPayload>
 }
 
@@ -160,6 +182,11 @@ export function ServiceFormDialog({
   const [selectedDevices, setSelectedDevices] = useState<number[]>([])
   const [selectedSpecialists, setSelectedSpecialists] = useState<number[]>([])
   const [prices, setPrices] = useState<PriceRow[]>([])
+  const [indications, setIndications] = useState<string[]>([])
+  const [contraindications, setContraindications] = useState<string[]>([])
+  const [preparationSteps, setPreparationSteps] = useState<string[]>([])
+  const [rehabSteps, setRehabSteps] = useState<string[]>([])
+  const [faqRows, setFaqRows] = useState<FaqRow[]>([])
   const [seo, setSeo] = useState<SeoState>(defaultSeoState)
 
   useEffect(() => {
@@ -261,6 +288,22 @@ export function ServiceFormDialog({
             isActive: row.isActive ?? true,
           }))
         )
+        setIndications((data.indications ?? []).filter((item): item is string => typeof item === "string"))
+        setContraindications((data.contraindications ?? []).filter((item): item is string => typeof item === "string"))
+        const prepSource = Array.isArray(data.preparationSteps)
+          ? data.preparationSteps
+          : (data.preparationChecklist ?? []).map((item) => item?.text ?? "")
+        const rehabSource = Array.isArray(data.rehabSteps)
+          ? data.rehabSteps
+          : (data.rehabChecklist ?? []).map((item) => item?.text ?? "")
+        setPreparationSteps(prepSource.filter((item): item is string => typeof item === "string"))
+        setRehabSteps(rehabSource.filter((item): item is string => typeof item === "string"))
+        setFaqRows(
+          (data.faq ?? []).map((item) => ({
+            question: item.question ?? "",
+            answer: item.answer ?? "",
+          }))
+        )
         setSeo(data.seo ?? defaultSeoState)
       })
       .catch((e: unknown) => {
@@ -289,6 +332,11 @@ export function ServiceFormDialog({
     setSelectedDevices([])
     setSelectedSpecialists([])
     setPrices([])
+    setIndications([])
+    setContraindications([])
+    setPreparationSteps([])
+    setRehabSteps([])
+    setFaqRows([])
     setSeo(defaultSeoState)
     setError(null)
     setLoading(false)
@@ -317,6 +365,30 @@ export function ServiceFormDialog({
 
   function removePriceRow(index: number) {
     setPrices((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  function addTextRow(setter: Dispatch<SetStateAction<string[]>>) {
+    setter((prev) => [...prev, ""])
+  }
+
+  function updateTextRow(setter: Dispatch<SetStateAction<string[]>>, index: number, value: string) {
+    setter((prev) => prev.map((item, i) => (i === index ? value : item)))
+  }
+
+  function removeTextRow(setter: Dispatch<SetStateAction<string[]>>, index: number) {
+    setter((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  function addFaqRow() {
+    setFaqRows((prev) => [...prev, { question: "", answer: "" }])
+  }
+
+  function updateFaqRow(index: number, field: keyof FaqRow, value: string) {
+    setFaqRows((prev) => prev.map((row, i) => (i === index ? { ...row, [field]: value } : row)))
+  }
+
+  function removeFaqRow(index: number) {
+    setFaqRows((prev) => prev.filter((_, i) => i !== index))
   }
 
   async function submit(e: React.FormEvent) {
@@ -355,6 +427,16 @@ export function ServiceFormDialog({
             order: row.order ? Number(row.order) : undefined,
             isActive: row.isActive,
           })),
+        indications: indications.map((value) => value.trim()).filter(Boolean),
+        contraindications: contraindications.map((value) => value.trim()).filter(Boolean),
+        preparationSteps: preparationSteps.map((value) => value.trim()).filter(Boolean),
+        rehabSteps: rehabSteps.map((value) => value.trim()).filter(Boolean),
+        faq: faqRows
+          .map((row) => ({
+            question: row.question.trim(),
+            answer: row.answer.trim(),
+          }))
+          .filter((row) => row.question.length > 0 && row.answer.length > 0),
         seo: prepareSeoPayload(seo),
       }
 
@@ -438,11 +520,11 @@ export function ServiceFormDialog({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-sm">Преимущество 1</label>
-                  <Input value={form.benefit1} onChange={(e) => updateForm("benefit1", e.target.value)} />
+                  <Textarea value={form.benefit1} onChange={(e) => updateForm("benefit1", e.target.value)} rows={3} />
                 </div>
                 <div>
                   <label className="text-sm">Преимущество 2</label>
-                  <Input value={form.benefit2} onChange={(e) => updateForm("benefit2", e.target.value)} />
+                  <Textarea value={form.benefit2} onChange={(e) => updateForm("benefit2", e.target.value)} rows={3} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -547,6 +629,103 @@ export function ServiceFormDialog({
                       </label>
                     </div>
                   </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">РџРѕРєР°Р·Р°РЅРёСЏ</div>
+                <Button type="button" variant="outline" onClick={() => addTextRow(setIndications)}>
+                  Р”РѕР±Р°РІРёС‚СЊ РїРѕРєР°Р·Р°РЅРёРµ
+                </Button>
+              </div>
+              {!indications.length && <div className="text-xs text-muted-foreground">РќРµ РґРѕР±Р°РІР»РµРЅРѕ РЅРё РѕРґРЅРѕРіРѕ РїСѓРЅРєС‚Р°</div>}
+              {indications.map((value, index) => (
+                <div key={`indication-${index}`} className="space-y-2 rounded-xl border p-3">
+                  <Textarea value={value} onChange={(e) => updateTextRow(setIndications, index, e.target.value)} rows={3} />
+                  <Button type="button" variant="ghost" onClick={() => removeTextRow(setIndications, index)}>
+                    РЈРґР°Р»РёС‚СЊ
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">РџСЂРѕС‚РёРІРѕРїРѕРєР°Р·Р°РЅРёСЏ</div>
+                <Button type="button" variant="outline" onClick={() => addTextRow(setContraindications)}>
+                  Р”РѕР±Р°РІРёС‚СЊ РїСЂРѕС‚РёРІРѕРїРѕРєР°Р·Р°РЅРёРµ
+                </Button>
+              </div>
+              {!contraindications.length && <div className="text-xs text-muted-foreground">РќРµ РґРѕР±Р°РІР»РµРЅРѕ РЅРё РѕРґРЅРѕРіРѕ РїСѓРЅРєС‚Р°</div>}
+              {contraindications.map((value, index) => (
+                <div key={`contraindication-${index}`} className="space-y-2 rounded-xl border p-3">
+                  <Textarea value={value} onChange={(e) => updateTextRow(setContraindications, index, e.target.value)} rows={3} />
+                  <Button type="button" variant="ghost" onClick={() => removeTextRow(setContraindications, index)}>
+                    РЈРґР°Р»РёС‚СЊ
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">РљР°Рє РїРѕРґРіРѕС‚РѕРІРёС‚СЊСЃСЏ</div>
+                <Button type="button" variant="outline" onClick={() => addTextRow(setPreparationSteps)}>
+                  Р”РѕР±Р°РІРёС‚СЊ С€Р°Рі
+                </Button>
+              </div>
+              {!preparationSteps.length && <div className="text-xs text-muted-foreground">РќРµ РґРѕР±Р°РІР»РµРЅРѕ РЅРё РѕРґРЅРѕРіРѕ С€Р°РіР°</div>}
+              {preparationSteps.map((value, index) => (
+                <div key={`prep-${index}`} className="space-y-2 rounded-xl border p-3">
+                  <Textarea value={value} onChange={(e) => updateTextRow(setPreparationSteps, index, e.target.value)} rows={3} />
+                  <Button type="button" variant="ghost" onClick={() => removeTextRow(setPreparationSteps, index)}>
+                    РЈРґР°Р»РёС‚СЊ
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">РџРѕСЃР»Рµ РїСЂРѕС†РµРґСѓСЂС‹</div>
+                <Button type="button" variant="outline" onClick={() => addTextRow(setRehabSteps)}>
+                  Р”РѕР±Р°РІРёС‚СЊ С€Р°Рі
+                </Button>
+              </div>
+              {!rehabSteps.length && <div className="text-xs text-muted-foreground">РќРµ РґРѕР±Р°РІР»РµРЅРѕ РЅРё РѕРґРЅРѕРіРѕ С€Р°РіР°</div>}
+              {rehabSteps.map((value, index) => (
+                <div key={`rehab-${index}`} className="space-y-2 rounded-xl border p-3">
+                  <Textarea value={value} onChange={(e) => updateTextRow(setRehabSteps, index, e.target.value)} rows={3} />
+                  <Button type="button" variant="ghost" onClick={() => removeTextRow(setRehabSteps, index)}>
+                    РЈРґР°Р»РёС‚СЊ
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">Р§Р°СЃС‚С‹Рµ РІРѕРїСЂРѕСЃС‹</div>
+                <Button type="button" variant="outline" onClick={addFaqRow}>
+                  Р”РѕР±Р°РІРёС‚СЊ РІРѕРїСЂРѕСЃ
+                </Button>
+              </div>
+              {!faqRows.length && <div className="text-xs text-muted-foreground">РќРµ РґРѕР±Р°РІР»РµРЅРѕ РЅРё РѕРґРЅРѕРіРѕ РІРѕРїСЂРѕСЃР°</div>}
+              {faqRows.map((row, index) => (
+                <div key={`faq-${index}`} className="space-y-2 rounded-xl border p-3">
+                  <div>
+                    <label className="text-sm">Р’РѕРїСЂРѕСЃ</label>
+                    <Textarea value={row.question} onChange={(e) => updateFaqRow(index, "question", e.target.value)} rows={2} />
+                  </div>
+                  <div>
+                    <label className="text-sm">РћС‚РІРµС‚</label>
+                    <Textarea value={row.answer} onChange={(e) => updateFaqRow(index, "answer", e.target.value)} rows={3} />
+                  </div>
+                  <Button type="button" variant="ghost" onClick={() => removeFaqRow(index)}>
+                    РЈРґР°Р»РёС‚СЊ
+                  </Button>
                 </div>
               ))}
             </div>
