@@ -23,6 +23,7 @@ type ServiceDetail = {
   categoryId: number
   name: string
   shortOffer?: string | null
+  about?: string | null
   priceFrom?: number | null
   durationMinutes?: number | null
   benefit1?: string | null
@@ -99,6 +100,7 @@ type ServicePayload = {
   categoryId: number
   name: string
   shortOffer: string | null
+  about: string | null
   priceFrom: number | null
   durationMinutes: number | null
   benefit1: string | null
@@ -144,6 +146,7 @@ export function ServiceFormDialog({
     categoryId,
     name: "",
     shortOffer: "",
+    about: "",
     priceFrom: "",
     durationMinutes: "",
     benefit1: "",
@@ -196,6 +199,7 @@ export function ServiceFormDialog({
           categoryId: data.categoryId,
           name: data.name ?? "",
           shortOffer: data.shortOffer ?? "",
+          about: data.about ?? "",
           priceFrom: data.priceFrom?.toString() ?? "",
           durationMinutes: data.durationMinutes?.toString() ?? "",
           benefit1: data.benefit1 ?? "",
@@ -271,6 +275,7 @@ export function ServiceFormDialog({
       categoryId,
       name: "",
       shortOffer: "",
+      about: "",
       priceFrom: "",
       durationMinutes: "",
       benefit1: "",
@@ -327,6 +332,7 @@ export function ServiceFormDialog({
         categoryId: Number(form.categoryId),
         name: form.name,
         shortOffer: form.shortOffer || null,
+        about: form.about || null,
         priceFrom: form.priceFrom ? Number(form.priceFrom) : null,
         durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : null,
         benefit1: form.benefit1 || null,
@@ -414,6 +420,10 @@ export function ServiceFormDialog({
               <div>
                 <label className="text-sm">Короткий оффер</label>
                 <Textarea value={form.shortOffer} onChange={(e) => updateForm("shortOffer", e.target.value)} />
+              </div>
+              <div>
+                <label className="text-sm">Описание услуги</label>
+                <Textarea value={form.about} onChange={(e) => updateForm("about", e.target.value)} rows={4} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
