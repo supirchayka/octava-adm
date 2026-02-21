@@ -162,6 +162,7 @@ export function ServiceFormDialog({
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [form, setForm] = useState({
@@ -341,6 +342,7 @@ export function ServiceFormDialog({
     setError(null)
     setLoading(false)
     setSaving(false)
+    setDeleting(false)
   }
 
   function updateForm(key: keyof typeof form, value: string | number) {
@@ -456,6 +458,29 @@ export function ServiceFormDialog({
       setError(message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function removeService() {
+    if (!serviceId) return
+    const confirmed = window.confirm("\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u0443\u0441\u043b\u0443\u0433\u0443? \u042d\u0442\u043e \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043d\u0435\u043b\u044c\u0437\u044f \u043e\u0442\u043c\u0435\u043d\u0438\u0442\u044c.")
+    if (!confirmed) return
+
+    setDeleting(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/admin/catalog/services/${serviceId}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) throw new Error(await res.text())
+      onCompleted()
+      setOpen(false)
+      resetState()
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "\u041e\u0448\u0438\u0431\u043a\u0430 \u0443\u0434\u0430\u043b\u0435\u043d\u0438\u044f"
+      setError(message)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -735,8 +760,17 @@ export function ServiceFormDialog({
             {error && <div className="text-sm text-red-600">{error}</div>}
 
             <div className="flex gap-2">
-              <Button type="submit" disabled={saving}>{saving ? "Сохраняю..." : "Сохранить"}</Button>
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Отмена</Button>
+              <Button type="submit" disabled={saving || deleting}>
+                {saving ? "Сохраняю..." : "Сохранить"}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={saving || deleting}>
+                Отмена
+              </Button>
+              {serviceId && (
+                <Button type="button" variant="destructive" onClick={removeService} disabled={saving || deleting}>
+                  {deleting ? "\u0423\u0434\u0430\u043b\u044f\u044e..." : "\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u0443\u0441\u043b\u0443\u0433\u0443"}
+                </Button>
+              )}
             </div>
           </form>
         )}
