@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { SeoFields, defaultSeoState, prepareSeoPayload } from "@/components/seo-fields"
 import { ImageField, type SimpleImageValue } from "@/components/image-field"
 
@@ -89,21 +88,32 @@ export default function CreateCategoryForm() {
             <label className="text-sm">Описание</label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Краткое описание" />
           </div>
-          <div>
-            <label className="text-sm">Пол категории*</label>
-            <Select value={gender} onValueChange={(value) => setGender(value as CategoryGender)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите пол" />
-              </SelectTrigger>
-              <SelectContent>
-                {genderOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <fieldset className="space-y-2">
+            <legend className="text-sm">Пол категории*</legend>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {genderOptions.map((option) => {
+                const checked = gender === option.value
+                return (
+                  <label
+                    key={option.value}
+                    className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
+                      checked ? "border-slate-900 bg-slate-50" : "border-slate-200"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="category-gender-create"
+                      value={option.value}
+                      checked={checked}
+                      onChange={() => setGender(option.value)}
+                      className="h-4 w-4"
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                )
+              })}
+            </div>
+          </fieldset>
           <div>
             <label className="text-sm">Порядок сортировки</label>
             <Input type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} placeholder="Например, 10" />
