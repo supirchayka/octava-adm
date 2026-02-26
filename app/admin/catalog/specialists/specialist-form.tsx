@@ -266,6 +266,7 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
               description="Загрузите портрет, который будет отображаться в карточке специалиста."
               value={photo}
               onChange={setPhoto}
+              previewClassName="h-56 w-full rounded-lg object-cover object-top"
             />
 
             <div className="space-y-2">

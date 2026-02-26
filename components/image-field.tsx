@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { FileUploader } from "@/components/file-uploader"
-import { absoluteUploadUrl } from "@/lib/utils"
+import { absoluteUploadUrl, cn } from "@/lib/utils"
 
 export type SimpleImageValue = {
   id?: number | null
@@ -16,9 +16,10 @@ interface Props {
   description?: string
   value: SimpleImageValue
   onChange: (next: SimpleImageValue) => void
+  previewClassName?: string
 }
 
-export function ImageField({ label, description, value, onChange }: Props) {
+export function ImageField({ label, description, value, onChange, previewClassName }: Props) {
   return (
     <div className="space-y-3 rounded-2xl border p-4">
       <div>
@@ -32,7 +33,7 @@ export function ImageField({ label, description, value, onChange }: Props) {
           width={800}
           height={320}
           unoptimized
-          className="h-48 w-full rounded-lg object-cover"
+          className={cn("h-48 w-full rounded-lg object-cover", previewClassName)}
         />
       ) : (
         <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
