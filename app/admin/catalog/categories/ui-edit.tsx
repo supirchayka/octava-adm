@@ -5,15 +5,24 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
 import { ImageField, type SimpleImageValue } from "@/components/image-field"
 import { resolveMediaFileId, resolveMediaPreviewUrl } from "@/lib/media"
 import { unwrapData } from "@/lib/utils"
 
+type CategoryGender = "FEMALE" | "MALE"
+
+const genderOptions: Array<{ value: CategoryGender; label: string }> = [
+  { value: "FEMALE", label: "Женский" },
+  { value: "MALE", label: "Мужской" },
+]
+
 interface CategoryDetail {
   id: number
   name: string
   description: string | null
+  gender: CategoryGender
   sortOrder?: number | null
   heroImageFileId?: number | null
   heroImage?: {
@@ -47,6 +56,7 @@ export function EditCategoryDialog({
   const [error, setError] = useState<string | null>(null)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
+  const [gender, setGender] = useState<CategoryGender>("FEMALE")
   const [sortOrder, setSortOrder] = useState("")
   const [heroImage, setHeroImage] = useState<SimpleImageValue>({ id: null, fileId: null, previewUrl: null })
   const [seo, setSeo] = useState<SeoState>(defaultSeoState)
@@ -69,6 +79,7 @@ export function EditCategoryDialog({
           null
         setName(json.name)
         setDescription(json.description ?? "")
+        setGender(json.gender ?? "FEMALE")
         setSortOrder(json.sortOrder?.toString() ?? "")
         setHeroImage({
           id: resolveMediaFileId(heroFromImages) ?? resolveMediaFileId(json.heroImage),
@@ -94,6 +105,7 @@ export function EditCategoryDialog({
         body: JSON.stringify({
           name,
           description: description || null,
+          gender,
           sortOrder: sortOrder ? Number(sortOrder) : null,
           heroImageFileId: heroImage.fileId,
           seo: prepareSeoPayload(seo),
@@ -112,6 +124,7 @@ export function EditCategoryDialog({
   function resetState() {
     setName("")
     setDescription("")
+    setGender("FEMALE")
     setSortOrder("")
     setHeroImage({ id: null, fileId: null, previewUrl: null })
     setSeo(defaultSeoState)
@@ -143,6 +156,21 @@ export function EditCategoryDialog({
             <div>
               <label className="text-sm">Описание</label>
               <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-sm">Пол категории</label>
+              <Select value={gender} onValueChange={(value) => setGender(value as CategoryGender)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите пол" />
+                </SelectTrigger>
+                <SelectContent>
+                  {genderOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="text-sm">Порядок сортировки</label>

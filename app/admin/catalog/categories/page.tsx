@@ -7,7 +7,19 @@ async function fetchCategories() {
   const res = await serverApi(`/admin/catalog/categories`)
   if (!res.ok) throw new Error("Не удалось получить категории")
   const data = await res.json()
-  return (Array.isArray(data) ? data : data.items || []) as Array<{ id:number; slug:string; name:string; description:string | null; servicesCount:number }>
+  return (Array.isArray(data) ? data : data.items || []) as Array<{
+    id: number
+    slug: string
+    name: string
+    description: string | null
+    gender: "FEMALE" | "MALE"
+    sortOrder?: number | null
+    servicesCount?: number
+  }>
+}
+
+function genderLabel(gender: "FEMALE" | "MALE") {
+  return gender === "MALE" ? "Мужской" : "Женский"
 }
 
 export default async function CategoriesPage() {
@@ -24,9 +36,10 @@ export default async function CategoriesPage() {
             <div>
               <div className="font-medium">{c.name}</div>
               <div className="text-sm text-gray-500">{c.description || "—"}</div>
+              <div className="text-sm text-gray-500">Пол: {genderLabel(c.gender)}</div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-500">услуг: {c.servicesCount}</div>
+              <div className="text-sm text-gray-500">услуг: {typeof c.servicesCount === "number" ? c.servicesCount : "—"}</div>
               <Link className="text-sm underline" href={`/admin/catalog/services?categoryId=${c.id}`}>Открыть услуги</Link>
               <EditCategoryDialog categoryId={c.id} />
             </div>
