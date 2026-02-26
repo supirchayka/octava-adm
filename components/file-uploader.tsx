@@ -9,21 +9,47 @@ type UploadedFile = {
   path: string
   mime: string
   sizeBytes: number
+  originalName?: string
 }
 
-export function FileUploader({ onUploaded }: { onUploaded: (f: UploadedFile) => void }) {
+export function FileUploader({
+  onUploaded,
+  accept,
+  maxSizeBytes,
+}: {
+  onUploaded: (f: UploadedFile) => void
+  accept?: string
+  maxSizeBytes?: number
+}) {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
+  const [previewType, setPreviewType] = useState<"image" | "video" | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (f) {
+      if (maxSizeBytes && f.size > maxSizeBytes) {
+        setFile(null)
+        setPreview(null)
+        setPreviewType(null)
+        setError(`Файл должен быть не больше ${(maxSizeBytes / 1024 / 1024).toFixed(0)} МБ`)
+        return
+      }
+
       setFile(f)
-      if (f.type.startsWith("image/")) setPreview(URL.createObjectURL(f))
-      else setPreview(null)
+      if (f.type.startsWith("image/")) {
+        setPreview(URL.createObjectURL(f))
+        setPreviewType("image")
+      } else if (f.type.startsWith("video/")) {
+        setPreview(URL.createObjectURL(f))
+        setPreviewType("video")
+      } else {
+        setPreview(null)
+        setPreviewType(null)
+      }
       setError(null)
     }
   }
@@ -56,21 +82,33 @@ export function FileUploader({ onUploaded }: { onUploaded: (f: UploadedFile) => 
 
   return (
     <div className="grid gap-2">
-      <input ref={inputRef} type="file" onChange={onPick} className="text-sm" />
+      <input ref={inputRef} type="file" accept={accept} onChange={onPick} className="text-sm" />
       {file && (
         <div className="text-xs text-muted-foreground">
           {file.name} {(file.size / 1024).toFixed(0)} КБ
         </div>
       )}
       {preview && (
-        <Image
-          src={preview}
-          alt="preview"
-          width={320}
-          height={160}
-          unoptimized
-          className="max-h-40 w-auto rounded-lg border object-contain"
-        />
+        <>
+          {previewType === "image" && (
+            <Image
+              src={preview}
+              alt="preview"
+              width={320}
+              height={160}
+              unoptimized
+              className="max-h-40 w-auto rounded-lg border object-contain"
+            />
+          )}
+          {previewType === "video" && (
+            <video
+              src={preview}
+              controls
+              preload="metadata"
+              className="max-h-40 w-auto rounded-lg border object-contain"
+            />
+          )}
+        </>
       )}
       {error && <div className="text-sm text-red-600">{error}</div>}
       <Button type="button" onClick={upload} disabled={!file || loading}>

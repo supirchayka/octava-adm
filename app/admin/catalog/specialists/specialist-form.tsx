@@ -17,6 +17,7 @@ export type ServiceOption = {
 type SpecialistDetail = {
   id: number
   firstName: string
+  middleName?: string | null
   lastName: string
   specialization: string
   biography: string
@@ -47,6 +48,7 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
 
   const [form, setForm] = useState({
     firstName: "",
+    middleName: "",
     lastName: "",
     specialization: "",
     biography: "",
@@ -73,6 +75,7 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
 
         setForm({
           firstName: data.firstName ?? "",
+          middleName: data.middleName ?? "",
           lastName: data.lastName ?? "",
           specialization: data.specialization ?? "",
           biography: data.biography ?? "",
@@ -103,6 +106,7 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
   function resetState() {
     setForm({
       firstName: "",
+      middleName: "",
       lastName: "",
       specialization: "",
       biography: "",
@@ -125,6 +129,7 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
     setError(null)
 
     const firstName = form.firstName.trim()
+    const middleName = form.middleName.trim()
     const lastName = form.lastName.trim()
     const specialization = form.specialization.trim()
     const biography = form.biography.trim()
@@ -149,6 +154,7 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
     try {
       const payload = {
         firstName,
+        middleName: middleName || null,
         lastName,
         specialization,
         biography,
@@ -199,7 +205,7 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
         {loading && <div className="text-sm text-muted-foreground">Загрузка...</div>}
         {!loading && (
           <form className="space-y-4 py-4" onSubmit={submit}>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
                 <label className="text-sm">Имя</label>
                 <Input
@@ -214,6 +220,13 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
                   value={form.lastName}
                   onChange={(e) => setForm((prev) => ({ ...prev, lastName: e.target.value }))}
                   required
+                />
+              </div>
+              <div>
+                <label className="text-sm">Отчество</label>
+                <Input
+                  value={form.middleName}
+                  onChange={(e) => setForm((prev) => ({ ...prev, middleName: e.target.value }))}
                 />
               </div>
             </div>

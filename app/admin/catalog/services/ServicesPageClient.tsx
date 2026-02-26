@@ -64,6 +64,7 @@ export default function ServicesPageClient() {
         const list = parseList<
           SpecialistOption & {
             firstName?: string | null
+            middleName?: string | null
             lastName?: string | null
             specialization?: string | null
           }
@@ -73,7 +74,10 @@ export default function ServicesPageClient() {
             .filter((item) => typeof item.id === "number")
             .map((item) => ({
               id: item.id,
-              label: `${item.firstName ?? ""} ${item.lastName ?? ""}`.trim() || item.specialization || `#${item.id}`,
+              label:
+                `${item.lastName ?? ""} ${item.firstName ?? ""} ${item.middleName ?? ""}`.trim() ||
+                item.specialization ||
+                `#${item.id}`,
             }))
         )
       })

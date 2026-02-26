@@ -1,9 +1,9 @@
 import { serverApi } from "@/lib/server-fetch"
-import { HomeForm } from "./home-form"
+import { PricesForm } from "./prices-form"
 
 async function fetchPage() {
   try {
-    const res = await serverApi(`/admin/pages/home`)
+    const res = await serverApi(`/admin/pages/prices`)
     if (!res.ok) return null
     return res.json()
   } catch {
@@ -11,7 +11,7 @@ async function fetchPage() {
   }
 }
 
-export default async function HomeAdminPage() {
+export default async function PricesAdminPage() {
   const data = await fetchPage()
-  return <HomeForm initialData={data} />
+  return <PricesForm initialData={data} />
 }

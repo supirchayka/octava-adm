@@ -17,6 +17,7 @@ const priceTypes = ["BASE", "EXTRA", "PACKAGE"]
 export type CategoryOption = { id: number; name: string }
 export type DeviceOption = { id: number; label: string }
 export type SpecialistOption = { id: number; label: string }
+type ServiceSpecialistLinkPayload = { specialistId: number; comment: string | null }
 
 type ServiceDetail = {
   id: number
@@ -52,7 +53,17 @@ type ServiceDetail = {
   devices?: Array<{ deviceId?: number | null; device?: { id: number } }>
   usedDevices?: Array<{ id?: number; deviceId?: number; device?: { id: number } } | number>
   specialistIds?: number[] | null
-  specialists?: Array<{ id?: number | null; specialistId?: number | null; specialist?: { id?: number | null } }>
+  specialists?: Array<{
+    id?: number | null
+    specialistId?: number | null
+    comment?: string | null
+    specialist?: {
+      id?: number | null
+      firstName?: string | null
+      middleName?: string | null
+      lastName?: string | null
+    }
+  }>
   servicePricesExtended?: Array<{
     id: number
     title: string
@@ -129,6 +140,7 @@ type ServicePayload = {
   galleryImageFileIds: number[]
   usedDeviceIds: number[]
   specialistIds: number[]
+  specialistLinks: ServiceSpecialistLinkPayload[]
   servicePricesExtended: ServicePricePayload[]
   indications: string[]
   contraindications: string[]
@@ -182,6 +194,7 @@ export function ServiceFormDialog({
   const [galleryImages, setGalleryImages] = useState<SimpleImageValue[]>([])
   const [selectedDevices, setSelectedDevices] = useState<number[]>([])
   const [selectedSpecialists, setSelectedSpecialists] = useState<number[]>([])
+  const [specialistComments, setSpecialistComments] = useState<Record<number, string>>({})
   const [prices, setPrices] = useState<PriceRow[]>([])
   const [indications, setIndications] = useState<string[]>([])
   const [contraindications, setContraindications] = useState<string[]>([])
@@ -223,6 +236,15 @@ export function ServiceFormDialog({
         const specialistsFromRelations = (data.specialists ?? [])
           .map((item) => asNumber(item?.id ?? item?.specialistId ?? item?.specialist?.id))
           .filter((id): id is number => typeof id === "number")
+        const specialistCommentsFromRelations = (data.specialists ?? []).reduce<Record<number, string>>((acc, item) => {
+          const specialistId = asNumber(item?.specialistId ?? item?.id ?? item?.specialist?.id)
+          if (typeof specialistId !== "number" || Number.isNaN(specialistId)) return acc
+          const comment = typeof item?.comment === "string" ? item.comment.trim() : ""
+          if (comment.length > 0) {
+            acc[specialistId] = comment
+          }
+          return acc
+        }, {})
         setForm({
           categoryId: data.categoryId,
           name: data.name ?? "",
@@ -278,6 +300,7 @@ export function ServiceFormDialog({
             )
           )
         )
+        setSpecialistComments(specialistCommentsFromRelations)
         setPrices(
           priceSource.map((row) => ({
             title: row.title || "",
@@ -332,6 +355,7 @@ export function ServiceFormDialog({
     setGalleryImages([])
     setSelectedDevices([])
     setSelectedSpecialists([])
+    setSpecialistComments({})
     setPrices([])
     setIndications([])
     setContraindications([])
@@ -354,7 +378,21 @@ export function ServiceFormDialog({
   }
 
   function toggleSpecialist(id: number) {
-    setSelectedSpecialists((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]))
+    setSelectedSpecialists((prev) => {
+      if (prev.includes(id)) {
+        setSpecialistComments((comments) => {
+          const next = { ...comments }
+          delete next[id]
+          return next
+        })
+        return prev.filter((s) => s !== id)
+      }
+      return [...prev, id]
+    })
+  }
+
+  function updateSpecialistComment(specialistId: number, value: string) {
+    setSpecialistComments((prev) => ({ ...prev, [specialistId]: value }))
   }
 
   function updatePriceRow(index: number, field: keyof PriceRow, value: string | boolean) {
@@ -418,6 +456,13 @@ export function ServiceFormDialog({
         galleryImageFileIds: galleryIds,
         usedDeviceIds: selectedDevices,
         specialistIds: selectedSpecialists,
+        specialistLinks: selectedSpecialists.map((specialistId) => {
+          const comment = specialistComments[specialistId]?.trim() ?? ""
+          return {
+            specialistId,
+            comment: comment.length > 0 ? comment : null,
+          }
+        }),
         servicePricesExtended: prices
           .filter((row) => row.title && row.price)
           .map((row) => ({
@@ -600,14 +645,27 @@ export function ServiceFormDialog({
               <div className="text-sm font-medium">Специалисты</div>
               <div className="grid gap-2">
                 {specialists.map((specialist) => (
-                  <label key={specialist.id} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={selectedSpecialists.includes(specialist.id)}
-                      onChange={() => toggleSpecialist(specialist.id)}
-                    />
-                    {specialist.label}
-                  </label>
+                  <div key={specialist.id} className="rounded-lg border border-slate-200 p-3">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedSpecialists.includes(specialist.id)}
+                        onChange={() => toggleSpecialist(specialist.id)}
+                      />
+                      {specialist.label}
+                    </label>
+                    {selectedSpecialists.includes(specialist.id) && (
+                      <div className="mt-2">
+                        <label className="text-xs text-muted-foreground">Комментарий специалиста по услуге</label>
+                        <Textarea
+                          value={specialistComments[specialist.id] ?? ""}
+                          onChange={(e) => updateSpecialistComment(specialist.id, e.target.value)}
+                          rows={2}
+                          placeholder="Например: персональный подход, опыт по данной процедуре и т.д."
+                        />
+                      </div>
+                    )}
+                  </div>
                 ))}
                 {!specialists.length && <div className="text-xs text-muted-foreground">Нет загруженных специалистов</div>}
               </div>

@@ -7,6 +7,7 @@ import { SpecialistFormDialog, type ServiceOption } from "./specialist-form"
 type Specialist = {
   id: number
   firstName: string
+  middleName?: string | null
   lastName: string
   specialization: string
   experienceYears: number
@@ -121,7 +122,7 @@ export default function SpecialistsPage() {
             <tbody>
               {specialists.map((specialist) => (
                 <tr key={specialist.id} className="border-t align-top">
-                  <td className="p-2">{`${specialist.firstName} ${specialist.lastName}`.trim()}</td>
+                  <td className="p-2">{buildSpecialistFullName(specialist)}</td>
                   <td className="p-2">{specialist.specialization}</td>
                   <td className="p-2">{specialist.experienceYears}</td>
                   <td className="p-2 text-muted-foreground">
@@ -183,4 +184,8 @@ function buildServicesLabel(specialist: Specialist, servicesById: Map<number, st
 
   if (fromRelations.length) return fromRelations.join(", ")
   return "—"
+}
+
+function buildSpecialistFullName(specialist: Specialist): string {
+  return `${specialist.lastName ?? ""} ${specialist.firstName ?? ""} ${specialist.middleName ?? ""}`.trim()
 }

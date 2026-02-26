@@ -11,7 +11,14 @@ interface Props {
   initialData: Record<string, unknown> | null
 }
 
-type ContactKeys = "phoneMain" | "email" | "telegramUrl" | "whatsappUrl" | "addressText" | "yandexMapUrl"
+type ContactKeys =
+  | "phoneMain"
+  | "email"
+  | "telegramUrl"
+  | "whatsappUrl"
+  | "maxMessengerUrl"
+  | "addressText"
+  | "yandexMapUrl"
 
 type WorkingHourState = {
   group: WorkingHourGroup
@@ -41,6 +48,7 @@ export function ContactsForm({ initialData }: Props) {
     email: getContactValue("email"),
     telegramUrl: getContactValue("telegramUrl"),
     whatsappUrl: getContactValue("whatsappUrl"),
+    maxMessengerUrl: getContactValue("maxMessengerUrl"),
     addressText: getContactValue("addressText"),
     yandexMapUrl: getContactValue("yandexMapUrl"),
   })
@@ -148,6 +156,10 @@ export function ContactsForm({ initialData }: Props) {
             <div className="grid gap-1">
               <label className="text-sm font-medium">Ссылка на WhatsApp</label>
               <Input type="url" value={contacts.whatsappUrl} onChange={(e) => updateContact("whatsappUrl", e.target.value)} placeholder="https://wa.me/..." />
+            </div>
+            <div className="grid gap-1">
+              <label className="text-sm font-medium">Ссылка на MAX</label>
+              <Input type="url" value={contacts.maxMessengerUrl} onChange={(e) => updateContact("maxMessengerUrl", e.target.value)} placeholder="https://max.ru/..." />
             </div>
             <div className="grid gap-1 md:col-span-2">
               <label className="text-sm font-medium">Как добраться</label>
