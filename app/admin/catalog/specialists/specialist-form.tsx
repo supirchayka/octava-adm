@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import { ImageField, type SimpleImageValue } from "@/components/image-field"
 import { asNumber, resolveMediaFileId, resolveMediaPreviewUrl } from "@/lib/media"
 import { unwrapData } from "@/lib/utils"
@@ -78,7 +78,7 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
           middleName: data.middleName ?? "",
           lastName: data.lastName ?? "",
           specialization: data.specialization ?? "",
-          biography: data.biography ?? "",
+          biography: normalizeBiographyForEditor(data.biography ?? ""),
           experienceYears: data.experienceYears?.toString() ?? "",
         })
         setPhoto({
@@ -132,10 +132,11 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
     const middleName = form.middleName.trim()
     const lastName = form.lastName.trim()
     const specialization = form.specialization.trim()
-    const biography = form.biography.trim()
+    const biography = normalizeBiographyForSubmit(form.biography)
+    const biographyText = extractPlainTextFromHtml(biography)
     const experienceYears = Number(form.experienceYears)
 
-    if (!firstName || !lastName || !specialization || !biography) {
+    if (!firstName || !lastName || !specialization || !biographyText) {
       setError("Заполните обязательные поля")
       setSaving(false)
       return
@@ -254,10 +255,11 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
 
             <div>
               <label className="text-sm">Биография</label>
-              <Textarea
+              <RichTextEditor
                 value={form.biography}
-                onChange={(e) => setForm((prev) => ({ ...prev, biography: e.target.value }))}
-                required
+                onChange={(value) => setForm((prev) => ({ ...prev, biography: value }))}
+                placeholder="Опишите опыт, образование и подход специалиста."
+                className="mt-1"
               />
             </div>
 
@@ -301,4 +303,55 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
       </DialogContent>
     </Dialog>
   )
+}
+
+function normalizeBiographyForEditor(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) return ""
+  if (looksLikeHtml(trimmed)) return trimmed
+  return plainTextToHtml(trimmed)
+}
+
+function normalizeBiographyForSubmit(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) return ""
+  if (looksLikeHtml(trimmed)) return trimmed
+  return plainTextToHtml(trimmed)
+}
+
+function extractPlainTextFromHtml(value: string): string {
+  return value
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<\/(p|div|li|ul|ol|h[1-6])>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function plainTextToHtml(value: string): string {
+  const normalized = value.replace(/\r\n/g, "\n")
+  const paragraphs = normalized
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
+
+  return paragraphs.join("")
+}
+
+function looksLikeHtml(value: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test(value)
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
 }
