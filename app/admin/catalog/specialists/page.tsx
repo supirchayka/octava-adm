@@ -11,6 +11,7 @@ type Specialist = {
   lastName: string
   specialization: string
   experienceYears: number
+  sortOrder?: number | null
   serviceIds?: number[]
   services?: Array<{ id?: number | null; name?: string | null; serviceId?: number | null; service?: { id?: number | null; name?: string | null } }>
 }
@@ -115,6 +116,7 @@ export default function SpecialistsPage() {
                 <th className="text-left p-2">ФИО</th>
                 <th className="text-left p-2">Специализация</th>
                 <th className="text-left p-2">Стаж</th>
+                <th className="text-left p-2">Порядок</th>
                 <th className="text-left p-2">Услуги</th>
                 <th className="text-left p-2">Действия</th>
               </tr>
@@ -125,6 +127,7 @@ export default function SpecialistsPage() {
                   <td className="p-2">{buildSpecialistFullName(specialist)}</td>
                   <td className="p-2">{specialist.specialization}</td>
                   <td className="p-2">{specialist.experienceYears}</td>
+                  <td className="p-2">{specialist.sortOrder ?? "—"}</td>
                   <td className="p-2 text-muted-foreground">
                     {buildServicesLabel(specialist, servicesById)}
                   </td>

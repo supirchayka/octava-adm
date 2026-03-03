@@ -22,6 +22,7 @@ type SpecialistDetail = {
   specialization: string
   biography: string
   experienceYears: number
+  sortOrder?: number | null
   photoFileId?: number | null
   photo?: {
     id?: number | null
@@ -53,6 +54,7 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
     specialization: "",
     biography: "",
     experienceYears: "",
+    sortOrder: "",
   })
   const [photo, setPhoto] = useState<SimpleImageValue>({ id: null, fileId: null, previewUrl: null })
   const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([])
@@ -80,6 +82,7 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
           specialization: data.specialization ?? "",
           biography: normalizeBiographyForEditor(data.biography ?? ""),
           experienceYears: data.experienceYears?.toString() ?? "",
+          sortOrder: data.sortOrder?.toString() ?? "",
         })
         setPhoto({
           id: resolveMediaFileId(data.photo),
@@ -111,6 +114,7 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
       specialization: "",
       biography: "",
       experienceYears: "",
+      sortOrder: "",
     })
     setPhoto({ id: null, fileId: null, previewUrl: null })
     setSelectedServiceIds([])
@@ -135,6 +139,8 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
     const biography = normalizeBiographyForSubmit(form.biography)
     const biographyText = extractPlainTextFromHtml(biography)
     const experienceYears = Number(form.experienceYears)
+    const sortOrderRaw = form.sortOrder.trim()
+    const sortOrder = sortOrderRaw === "" ? null : Number(sortOrderRaw)
 
     if (!firstName || !lastName || !specialization || !biographyText) {
       setError("Заполните обязательные поля")
@@ -143,6 +149,11 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
     }
     if (!Number.isFinite(experienceYears) || experienceYears < 0) {
       setError("Укажите корректный стаж")
+      setSaving(false)
+      return
+    }
+    if (sortOrder !== null && (!Number.isFinite(sortOrder) || !Number.isInteger(sortOrder))) {
+      setError("Укажите корректный порядок сортировки")
       setSaving(false)
       return
     }
@@ -160,6 +171,7 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
         specialization,
         biography,
         experienceYears,
+        sortOrder,
         photoFileId: photo.fileId,
         serviceIds: selectedServiceIds,
       }
@@ -232,7 +244,7 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
                 <label className="text-sm">Специализация</label>
                 <Input
@@ -249,6 +261,15 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
                   onChange={(e) => setForm((prev) => ({ ...prev, experienceYears: e.target.value }))}
                   min={0}
                   required
+                />
+              </div>
+              <div>
+                <label className="text-sm">Порядок сортировки</label>
+                <Input
+                  type="number"
+                  value={form.sortOrder}
+                  onChange={(e) => setForm((prev) => ({ ...prev, sortOrder: e.target.value }))}
+                  placeholder="Например, 10"
                 />
               </div>
             </div>
