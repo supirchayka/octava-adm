@@ -100,7 +100,7 @@ export function RichTextEditor({
           role="textbox"
           aria-multiline="true"
           className={cn(
-            "min-h-40 w-full px-3 py-2 text-sm leading-6 text-slate-900 outline-none [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6",
+            "min-h-40 w-full px-3 py-2 text-sm leading-6 text-slate-900 outline-none [&_div]:my-2 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6",
             editorClassName
           )}
           onInput={emitValue}
