@@ -14,6 +14,11 @@ export type ServiceOption = {
   label: string
 }
 
+type SpecialistServiceLinkPayload = {
+  serviceId: number
+  sortOrder: number
+}
+
 type SpecialistDetail = {
   id: number
   firstName: string
@@ -31,7 +36,12 @@ type SpecialistDetail = {
     file?: { id?: number | null; path?: string | null; url?: string | null } | null
   } | null
   serviceIds?: number[] | null
-  services?: Array<{ id?: number | null; serviceId?: number | null; service?: { id?: number | null } }>
+  services?: Array<{
+    id?: number | null
+    serviceId?: number | null
+    sortOrder?: number | null
+    service?: { id?: number | null }
+  }>
 }
 
 interface Props {
@@ -71,7 +81,8 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
       .then((payload: SpecialistDetail) => {
         const data = unwrapData<SpecialistDetail>(payload)
         const serviceIds = data.serviceIds ?? []
-        const serviceIdsFromRelations = (data.services ?? [])
+        const serviceIdsFromRelations = [...(data.services ?? [])]
+          .sort((a, b) => (a?.sortOrder ?? Number.MAX_SAFE_INTEGER) - (b?.sortOrder ?? Number.MAX_SAFE_INTEGER))
           .map((item) => asNumber(item?.id ?? item?.serviceId ?? item?.service?.id))
           .filter((id): id is number => typeof id === "number")
 
@@ -127,6 +138,21 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
     setSelectedServiceIds((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]))
   }
 
+  function moveService(serviceId: number, direction: -1 | 1) {
+    setSelectedServiceIds((prev) => {
+      const currentIndex = prev.indexOf(serviceId)
+      if (currentIndex === -1) return prev
+
+      const nextIndex = currentIndex + direction
+      if (nextIndex < 0 || nextIndex >= prev.length) return prev
+
+      const next = [...prev]
+      const [moved] = next.splice(currentIndex, 1)
+      next.splice(nextIndex, 0, moved)
+      return next
+    })
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -174,6 +200,10 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
         sortOrder,
         photoFileId: photo.fileId,
         serviceIds: selectedServiceIds,
+        serviceLinks: selectedServiceIds.map<SpecialistServiceLinkPayload>((serviceId, index) => ({
+          serviceId,
+          sortOrder: index,
+        })),
       }
 
       const url = specialistId ? `/api/admin/catalog/specialists/${specialistId}` : `/api/admin/catalog/specialists`
@@ -293,6 +323,33 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
             />
 
             <div className="space-y-2">
+              <div className="text-sm font-medium">Порядок услуг специалиста</div>
+              {!selectedServiceIds.length && (
+                <div className="text-xs text-muted-foreground">Выберите услуги ниже, затем настройте порядок.</div>
+              )}
+              {!!selectedServiceIds.length && (
+                <div className="space-y-2">
+                  {selectedServiceIds.map((serviceId, index) => (
+                    <div key={serviceId} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2">
+                      <div className="min-w-0 text-sm">
+                        <span className="mr-2 text-xs text-muted-foreground">{index + 1}.</span>
+                        <span className="truncate">{getServiceLabel(services, serviceId)}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="button" variant="outline" onClick={() => moveService(serviceId, -1)} disabled={index === 0}>
+                          Вверх
+                        </Button>
+                        <Button type="button" variant="outline" onClick={() => moveService(serviceId, 1)} disabled={index === selectedServiceIds.length - 1}>
+                          Вниз
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <div className="text-sm font-medium">Услуги</div>
               <div className="grid gap-2">
                 {services.map((service) => (
@@ -324,6 +381,10 @@ export function SpecialistFormDialog({ specialistId, services, triggerLabel, onC
       </DialogContent>
     </Dialog>
   )
+}
+
+function getServiceLabel(services: ServiceOption[], serviceId: number): string {
+  return services.find((service) => service.id === serviceId)?.label ?? `#${serviceId}`
 }
 
 function normalizeBiographyForEditor(value: string): string {

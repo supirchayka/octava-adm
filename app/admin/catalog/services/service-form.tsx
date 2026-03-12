@@ -13,16 +13,22 @@ import { asNumber, resolveMediaFileId, resolveMediaPreviewUrl } from "@/lib/medi
 import { unwrapData } from "@/lib/utils"
 
 const priceTypes = ["BASE", "EXTRA", "PACKAGE"]
+const DEFAULT_SERVICE_CODE = "АБ123-88"
 
 export type CategoryOption = { id: number; name: string }
 export type DeviceOption = { id: number; label: string }
 export type SpecialistOption = { id: number; label: string }
-type ServiceSpecialistLinkPayload = { specialistId: number; comment: string | null }
+type ServiceSpecialistLinkPayload = {
+  specialistId: number
+  comment: string | null
+  sortOrder?: number | null
+}
 
 type ServiceDetail = {
   id: number
   categoryId: number
   name: string
+  serviceCode?: string | null
   shortOffer?: string | null
   about?: string | null
   priceFrom?: number | null
@@ -57,6 +63,7 @@ type ServiceDetail = {
     id?: number | null
     specialistId?: number | null
     comment?: string | null
+    sortOrder?: number | null
     specialist?: {
       id?: number | null
       firstName?: string | null
@@ -67,6 +74,7 @@ type ServiceDetail = {
   servicePricesExtended?: Array<{
     id: number
     title: string
+    serviceCode?: string | null
     price: number
     durationMinutes?: number | null
     type?: string | null
@@ -77,6 +85,7 @@ type ServiceDetail = {
   pricesExtended?: Array<{
     id: number
     title: string
+    serviceCode?: string | null
     price: number
     durationMinutes?: number | null
     type?: string | null
@@ -101,6 +110,7 @@ type ServiceDetail = {
 
 type PriceRow = {
   title: string
+  serviceCode: string
   price: string
   durationMinutes: string
   type: string
@@ -116,6 +126,7 @@ type FaqRow = {
 
 type ServicePricePayload = {
   title: string
+  serviceCode?: string
   price: number
   durationMinutes?: number
   type?: string
@@ -127,6 +138,7 @@ type ServicePricePayload = {
 type ServicePayload = {
   categoryId: number
   name: string
+  serviceCode: string
   shortOffer: string | null
   about: string | null
   priceFrom: number | null
@@ -180,6 +192,7 @@ export function ServiceFormDialog({
   const [form, setForm] = useState({
     categoryId,
     name: "",
+    serviceCode: DEFAULT_SERVICE_CODE,
     shortOffer: "",
     about: "",
     priceFrom: "",
@@ -195,6 +208,7 @@ export function ServiceFormDialog({
   const [selectedDevices, setSelectedDevices] = useState<number[]>([])
   const [selectedSpecialists, setSelectedSpecialists] = useState<number[]>([])
   const [specialistComments, setSpecialistComments] = useState<Record<number, string>>({})
+  const [specialistSortOrders, setSpecialistSortOrders] = useState<Record<number, number>>({})
   const [prices, setPrices] = useState<PriceRow[]>([])
   const [indications, setIndications] = useState<string[]>([])
   const [contraindications, setContraindications] = useState<string[]>([])
@@ -245,9 +259,18 @@ export function ServiceFormDialog({
           }
           return acc
         }, {})
+        const specialistSortOrdersFromRelations = (data.specialists ?? []).reduce<Record<number, number>>((acc, item) => {
+          const specialistId = asNumber(item?.specialistId ?? item?.id ?? item?.specialist?.id)
+          if (typeof specialistId !== "number" || Number.isNaN(specialistId)) return acc
+          if (typeof item?.sortOrder === "number" && Number.isInteger(item.sortOrder)) {
+            acc[specialistId] = item.sortOrder
+          }
+          return acc
+        }, {})
         setForm({
           categoryId: data.categoryId,
           name: data.name ?? "",
+          serviceCode: data.serviceCode ?? DEFAULT_SERVICE_CODE,
           shortOffer: data.shortOffer ?? "",
           about: data.about ?? "",
           priceFrom: data.priceFrom?.toString() ?? "",
@@ -301,9 +324,11 @@ export function ServiceFormDialog({
           )
         )
         setSpecialistComments(specialistCommentsFromRelations)
+        setSpecialistSortOrders(specialistSortOrdersFromRelations)
         setPrices(
           priceSource.map((row) => ({
             title: row.title || "",
+            serviceCode: row.serviceCode ?? DEFAULT_SERVICE_CODE,
             price: row.price?.toString() || "",
             durationMinutes: row.durationMinutes?.toString() || "",
             type: row.type || "BASE",
@@ -341,6 +366,7 @@ export function ServiceFormDialog({
     setForm({
       categoryId,
       name: "",
+      serviceCode: DEFAULT_SERVICE_CODE,
       shortOffer: "",
       about: "",
       priceFrom: "",
@@ -356,6 +382,7 @@ export function ServiceFormDialog({
     setSelectedDevices([])
     setSelectedSpecialists([])
     setSpecialistComments({})
+    setSpecialistSortOrders({})
     setPrices([])
     setIndications([])
     setContraindications([])
@@ -385,6 +412,11 @@ export function ServiceFormDialog({
           delete next[id]
           return next
         })
+        setSpecialistSortOrders((sortOrders) => {
+          const next = { ...sortOrders }
+          delete next[id]
+          return next
+        })
         return prev.filter((s) => s !== id)
       }
       return [...prev, id]
@@ -400,7 +432,19 @@ export function ServiceFormDialog({
   }
 
   function addPriceRow() {
-    setPrices((prev) => [...prev, { title: "", price: "", durationMinutes: "", type: "BASE", sessionsCount: "", order: "", isActive: true }])
+    setPrices((prev) => [
+      ...prev,
+      {
+        title: "",
+        serviceCode: DEFAULT_SERVICE_CODE,
+        price: "",
+        durationMinutes: "",
+        type: "BASE",
+        sessionsCount: "",
+        order: "",
+        isActive: true,
+      },
+    ])
   }
 
   function removePriceRow(index: number) {
@@ -431,6 +475,11 @@ export function ServiceFormDialog({
     setFaqRows((prev) => prev.filter((_, i) => i !== index))
   }
 
+  function normalizeServiceCodeInput(value: string) {
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : DEFAULT_SERVICE_CODE
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -443,6 +492,7 @@ export function ServiceFormDialog({
       const payload: ServicePayload = {
         categoryId: Number(form.categoryId),
         name: form.name,
+        serviceCode: normalizeServiceCodeInput(form.serviceCode),
         shortOffer: form.shortOffer || null,
         about: form.about || null,
         priceFrom: form.priceFrom ? Number(form.priceFrom) : null,
@@ -461,12 +511,14 @@ export function ServiceFormDialog({
           return {
             specialistId,
             comment: comment.length > 0 ? comment : null,
+            sortOrder: specialistSortOrders[specialistId],
           }
         }),
         servicePricesExtended: prices
           .filter((row) => row.title && row.price)
           .map((row) => ({
             title: row.title,
+            serviceCode: normalizeServiceCodeInput(row.serviceCode),
             price: Number(row.price),
             durationMinutes: row.durationMinutes ? Number(row.durationMinutes) : undefined,
             type: row.type,
@@ -568,6 +620,10 @@ export function ServiceFormDialog({
               <div>
                 <label className="text-sm">Название*</label>
                 <Input value={form.name} onChange={(e) => updateForm("name", e.target.value)} required />
+              </div>
+              <div>
+                <label className="text-sm">Код услуги</label>
+                <Input value={form.serviceCode} onChange={(e) => updateForm("serviceCode", e.target.value)} maxLength={255} />
               </div>
               <div>
                 <label className="text-sm">Короткий оффер</label>
@@ -685,6 +741,7 @@ export function ServiceFormDialog({
                   </div>
                   <div className="grid gap-2">
                     <Input value={row.title} onChange={(e) => updatePriceRow(index, "title", e.target.value)} placeholder="Название" />
+                    <Input value={row.serviceCode} onChange={(e) => updatePriceRow(index, "serviceCode", e.target.value)} placeholder="Код услуги" maxLength={255} />
                     <div className="grid grid-cols-2 gap-2">
                       <Input type="number" value={row.price} onChange={(e) => updatePriceRow(index, "price", e.target.value)} placeholder="Цена" />
                       <Input type="number" value={row.durationMinutes} onChange={(e) => updatePriceRow(index, "durationMinutes", e.target.value)} placeholder="Длительность" />

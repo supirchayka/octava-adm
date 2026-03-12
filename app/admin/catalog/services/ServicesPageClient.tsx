@@ -10,9 +10,11 @@ type Service = {
   slug: string
   categoryId?: number
   name: string
+  serviceCode?: string | null
   shortOffer: string | null
   priceFrom: number | null
   durationMinutes: number | null
+  sortOrder?: number | null
 }
 
 export default function ServicesPageClient() {
@@ -153,9 +155,11 @@ export default function ServicesPageClient() {
             <thead className="bg-secondary/50">
               <tr>
                 <th className="text-left p-2">Название</th>
+                <th className="text-left p-2">Код</th>
                 <th className="text-left p-2">Оффер</th>
                 <th className="text-left p-2">Цена от</th>
                 <th className="text-left p-2">Длительность</th>
+                <th className="text-left p-2">Порядок</th>
                 <th className="text-left p-2">Действия</th>
               </tr>
             </thead>
@@ -163,9 +167,11 @@ export default function ServicesPageClient() {
               {services.map((s) => (
                 <tr key={s.id} className="border-t">
                   <td className="p-2">{s.name}</td>
+                  <td className="p-2">{s.serviceCode || "—"}</td>
                   <td className="p-2">{s.shortOffer || "—"}</td>
                   <td className="p-2">{s.priceFrom ?? "—"}</td>
                   <td className="p-2">{s.durationMinutes ?? "—"}</td>
+                  <td className="p-2">{s.sortOrder ?? "—"}</td>
                   <td className="p-2">
                     <ServiceFormDialog
                       serviceId={s.id}
