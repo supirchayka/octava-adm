@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
 import { ImageField, type SimpleImageValue } from "@/components/image-field"
 import { ImageListField } from "@/components/image-list-field"
@@ -15,7 +15,7 @@ import { unwrapData } from "@/lib/utils"
 const priceTypes = ["BASE", "EXTRA", "PACKAGE"]
 const DEFAULT_SERVICE_CODE = "АБ123-88"
 
-export type CategoryOption = { id: number; name: string }
+export type CategoryOption = { id: number; name: string; gender: "FEMALE" | "MALE" }
 export type DeviceOption = { id: number; label: string }
 export type SpecialistOption = { id: number; label: string }
 type ServiceSpecialistLinkPayload = {
@@ -583,6 +583,9 @@ export function ServiceFormDialog({
 
   const title = serviceId ? "Редактировать услугу" : "Новая услуга"
 
+  const femaleCategories = categories.filter((category) => category.gender !== "MALE")
+  const maleCategories = categories.filter((category) => category.gender === "MALE")
+
   return (
     <Dialog open={open} onOpenChange={(next) => {
       setOpen(next)
@@ -608,11 +611,26 @@ export function ServiceFormDialog({
                   <SelectValue placeholder="Выберите категорию" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={String(cat.id)}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
+                  {femaleCategories.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel>Женщинам</SelectLabel>
+                      {femaleCategories.map((cat) => (
+                        <SelectItem key={cat.id} value={String(cat.id)}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                  {maleCategories.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel>Мужчинам</SelectLabel>
+                      {maleCategories.map((cat) => (
+                        <SelectItem key={cat.id} value={String(cat.id)}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
                 </SelectContent>
               </Select>
             </div>

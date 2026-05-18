@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { ServiceFormDialog, type CategoryOption, type DeviceOption, type SpecialistOption } from "./service-form"
+import { ServiceFormDialog, type DeviceOption, type SpecialistOption } from "./service-form"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
-type Category = { id: number; slug: string; name: string; description: string | null }
+type Category = { id: number; slug: string; name: string; description: string | null; gender: "FEMALE" | "MALE" }
 type Service = {
   id: number
   slug: string
@@ -141,6 +141,9 @@ export default function ServicesPageClient() {
     }
   }
 
+  const femaleCategories = cats.filter((category) => category.gender !== "MALE")
+  const maleCategories = cats.filter((category) => category.gender === "MALE")
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Услуги</h1>
@@ -153,16 +156,29 @@ export default function ServicesPageClient() {
             onChange={(e) => loadServices(e.target.value ? Number(e.target.value) : null)}
           >
             <option value="">— выберите —</option>
-            {cats.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
+            {femaleCategories.length > 0 && (
+              <optgroup label="Женщинам">
+                {femaleCategories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {maleCategories.length > 0 && (
+              <optgroup label="Мужчинам">
+                {maleCategories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
         <ServiceFormDialog
           categoryId={selectedCategoryId || 0}
-          categories={cats as CategoryOption[]}
+          categories={cats}
           devices={devices}
           specialists={specialists}
           triggerLabel="+ Добавить услугу"
@@ -201,7 +217,7 @@ export default function ServicesPageClient() {
                     <ServiceFormDialog
                       serviceId={s.id}
                       categoryId={selectedCategoryId || s.categoryId || 0}
-                      categories={cats as CategoryOption[]}
+                      categories={cats}
                       devices={devices}
                       specialists={specialists}
                       triggerLabel="Редактировать"
