@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { ServiceFormDialog, type CategoryOption, type DeviceOption, type SpecialistOption } from "./service-form"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 type Category = { id: number; slug: string; name: string; description: string | null }
 type Service = {
@@ -25,6 +27,9 @@ export default function ServicesPageClient() {
   const [devices, setDevices] = useState<DeviceOption[]>([])
   const [specialists, setSpecialists] = useState<SpecialistOption[]>([])
   const [servicesError, setServicesError] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Service | null>(null)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch(`/api/admin/catalog/categories`)
@@ -117,6 +122,25 @@ export default function ServicesPageClient() {
     }
   }, [searchParams, selectedCategoryId])
 
+  async function confirmDeleteService() {
+    if (!deleteTarget) return
+    setDeletingId(deleteTarget.id)
+    setDeleteError(null)
+    try {
+      const res = await fetch(`/api/admin/catalog/services/${deleteTarget.id}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) throw new Error(await res.text())
+      setDeleteTarget(null)
+      await loadServices(selectedCategoryId)
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Не удалось удалить услугу"
+      setDeleteError(message)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Услуги</h1>
@@ -173,6 +197,7 @@ export default function ServicesPageClient() {
                   <td className="p-2">{s.durationMinutes ?? "—"}</td>
                   <td className="p-2">{s.sortOrder ?? "—"}</td>
                   <td className="p-2">
+                    <div className="flex flex-wrap gap-2">
                     <ServiceFormDialog
                       serviceId={s.id}
                       categoryId={selectedCategoryId || s.categoryId || 0}
@@ -182,6 +207,17 @@ export default function ServicesPageClient() {
                       triggerLabel="Редактировать"
                       onCompleted={() => loadServices(selectedCategoryId)}
                     />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => {
+                        setDeleteError(null)
+                        setDeleteTarget(s)
+                      }}
+                    >
+                      Удалить
+                    </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -189,6 +225,25 @@ export default function ServicesPageClient() {
           </table>
         </div>
       )}
+      <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Удалить услугу?</DialogTitle>
+            <DialogDescription>
+              Услуга «{deleteTarget?.name ?? ""}» будет удалена из каталога. Это действие нельзя отменить.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteError && <div className="text-sm text-red-600">{deleteError}</div>}
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deletingId !== null}>
+              Отмена
+            </Button>
+            <Button type="button" variant="destructive" onClick={confirmDeleteService} disabled={deletingId !== null}>
+              {deletingId !== null ? "Удаляю..." : "Удалить"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

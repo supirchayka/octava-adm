@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import { Button } from "@/components/ui/button"
 import { SeoFields, defaultSeoState, prepareSeoPayload, type SeoState } from "@/components/seo-fields"
 import { unwrapData } from "@/lib/utils"
@@ -95,6 +95,11 @@ export function ContactsForm({ initialData }: Props) {
     try {
       const payload: Record<string, unknown> = {}
       ;(Object.keys(contacts) as ContactKeys[]).forEach((key) => {
+        if (key === "addressText") {
+          payload[key] = isRichTextEmpty(contacts[key]) ? null : contacts[key]
+          return
+        }
+
         payload[key] = contacts[key] === "" ? null : contacts[key]
       })
       payload.workingHours = workingHours.map((hour) => ({
@@ -162,8 +167,13 @@ export function ContactsForm({ initialData }: Props) {
               <Input type="url" value={contacts.maxMessengerUrl} onChange={(e) => updateContact("maxMessengerUrl", e.target.value)} placeholder="https://max.ru/..." />
             </div>
             <div className="grid gap-1 md:col-span-2">
-              <label className="text-sm font-medium">Как добраться</label>
-              <Textarea value={contacts.addressText} onChange={(e) => updateContact("addressText", e.target.value)} placeholder="Укажите адрес, вход, ориентиры" />
+              <label className="text-sm font-medium">Как нас найти</label>
+              <RichTextEditor
+                value={contacts.addressText}
+                onChange={(value) => updateContact("addressText", value)}
+                placeholder="Укажите адрес, вход, ориентиры"
+                editorClassName="min-h-32"
+              />
             </div>
             <div className="grid gap-1 md:col-span-2">
               <label className="text-sm font-medium">Ссылка на карту (Яндекс)</label>
@@ -294,4 +304,11 @@ function normalizeStations(list: unknown): MetroStationState[] {
             : "",
     }
   })
+}
+
+function isRichTextEmpty(value: string) {
+  return value
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .trim() === ""
 }

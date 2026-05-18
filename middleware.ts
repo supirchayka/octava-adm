@@ -7,12 +7,16 @@ export function middleware(req: NextRequest) {
     if (!access) {
       const login = new URL("/login", req.url)
       login.searchParams.set("next", pathname)
-      return NextResponse.redirect(login)
+      const response = NextResponse.redirect(login)
+      response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet")
+      return response
     }
   }
-  return NextResponse.next()
+  const response = NextResponse.next()
+  response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet")
+  return response
 }
 
 export const config = {
-  matcher: ["/admin/:path*"]
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"]
 }

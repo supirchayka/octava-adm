@@ -4,6 +4,7 @@ const pages = [
   { slug: "home", title: "Главная", description: "Hero видео, интерьер и SEO" },
   { slug: "about", title: "О клинике", description: "Hero + CTA" },
   { slug: "contacts", title: "Контакты", description: "Телефоны, адрес, карта" },
+  { slug: "services", title: "Услуги", description: "Тексты выбора направления и гендерных разделов" },
   { slug: "prices", title: "Цены (PDF)", description: "Загрузка актуального прайса" },
   { slug: "personal-data-policy", title: "Политика ПДН", description: "Заголовок и тело" },
   { slug: "privacy-policy", title: "Политика конфиденциальности", description: "Текстовый документ" },
